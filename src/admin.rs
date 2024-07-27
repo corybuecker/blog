@@ -39,7 +39,7 @@ async fn require_authentication(
         let mongo = state.mongo.database("blog").collection::<User>("users");
 
         let result = mongo
-            .find_one(doc! {"email":  email.unwrap().value().to_string() }, None)
+            .find_one(doc! {"email":  email.unwrap().value().to_string() })
             .await;
 
         match result {
