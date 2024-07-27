@@ -32,7 +32,7 @@ pub struct PostForm {
 pub async fn index(State(state): State<Arc<SharedState>>) -> Response {
     let collection: Collection<super::Page> = state.mongo.database("blog").collection("pages");
 
-    let mut cursor = collection.find(doc! {}, None).await.unwrap();
+    let mut cursor = collection.find(doc! {}).await.unwrap();
 
     let mut pages: Vec<Page> = Vec::new();
 
@@ -66,7 +66,7 @@ pub async fn edit(State(state): State<Arc<SharedState>>, Path(id): Path<String>)
 
     let collection: Collection<Page> = database.collection("pages");
     let mut page = collection
-        .find_one(doc! {"_id": oid}, None)
+        .find_one(doc! {"_id": oid})
         .await
         .unwrap()
         .unwrap();
@@ -100,7 +100,7 @@ pub async fn create(
         updated_at: mongodb::bson::DateTime::now(),
     };
 
-    let _result = collection.insert_one(new_page, None).await;
+    let _result = collection.insert_one(new_page).await;
 
     return Redirect::to("/admin/pages").into_response();
 }
@@ -115,7 +115,7 @@ pub async fn update(
     let oid = ObjectId::from_str(&id).unwrap();
 
     let mut page = collection
-        .find_one(doc! {"_id": oid}, None)
+        .find_one(doc! {"_id": oid})
         .await
         .unwrap()
         .unwrap();
@@ -140,7 +140,7 @@ pub async fn update(
     page.title = form.title;
     page.preview = form.preview;
 
-    let _result = collection.replace_one(doc! {"_id": oid}, page, None).await;
+    let _result = collection.replace_one(doc! {"_id": oid}, page).await;
 
     return Redirect::to("/admin/pages").into_response();
 }

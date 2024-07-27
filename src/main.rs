@@ -56,10 +56,8 @@ async fn home(State(shared_state): State<Arc<SharedState>>) -> Response {
         .build();
 
     let mut cur = mongo
-        .find(
-            doc! {"published_at": doc!{"$lte": mongodb::bson::DateTime::now()}},
-            find_options,
-        )
+        .find(doc! {"published_at": doc!{"$lte": mongodb::bson::DateTime::now()}})
+        .with_options(find_options)
         .await
         .unwrap();
 
@@ -91,7 +89,7 @@ async fn page(Path(slug): Path<String>, State(shared_state): State<Arc<SharedSta
 
     let collection: Collection<Page> = database.collection("pages");
     let page = collection
-        .find_one(doc! {"slug": slug}, None)
+        .find_one(doc! {"slug": slug})
         .await
         .unwrap()
         .unwrap();
