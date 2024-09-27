@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-axum = "0.7.5"
+axum = "0.7.6"
 bson = { version = "2.13.0", features = ["chrono-0_4", "serde_with-3"] }
 chrono = "0.4.38"
 comrak = "0.28.0"
