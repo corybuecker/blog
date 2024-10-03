@@ -1,4 +1,4 @@
-use std::{env, str::FromStr, sync::Arc};
+use std::{env, sync::Arc};
 mod admin;
 use axum::{
     extract::{MatchedPath, Path, State},
@@ -15,7 +15,7 @@ use std::collections::VecDeque;
 use tera::Tera;
 use tower_http::services::ServeDir;
 use tower_http::trace::TraceLayer;
-use tracing::info_span;
+use tracing::{info_span};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 pub struct SharedState {
     tera: Tera,
