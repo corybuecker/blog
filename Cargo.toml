@@ -14,7 +14,7 @@ futures = "0.3.28"
 log = "0.4.22"
 mongodb = "3.1.0"
 openidconnect = { version = "3.5.0", features = ["reqwest"] }
-serde = "1.0.210"
+serde = "1.0.214"
 serde_with = "3.11.0"
 tera = { version = "1.20.0", features = ["builtins"] }
 tokio = { version = "1.41.0", features = ["full"] }
