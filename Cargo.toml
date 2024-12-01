@@ -17,7 +17,7 @@ openidconnect = { version = "3.5.0", features = ["reqwest"] }
 serde = "1.0.215"
 serde_with = "3.11.0"
 tera = { version = "1.20.0", features = ["builtins"] }
-tokio = { version = "1.41.0", features = ["full"] }
+tokio = { version = "1.41.1", features = ["full"] }
 tower-cookies = { version = "0.10.0", features = ["signed"] }
 tower-http = { version = "0.6.1", features = ["trace", "fs"] }
 tracing = "0.1.41"
