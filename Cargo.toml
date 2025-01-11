@@ -12,7 +12,7 @@ chrono = "0.4.38"
 comrak = "0.32.0"
 futures = "0.3.31"
 log = "0.4.22"
-mongodb = "3.1.0"
+mongodb = "3.1.1"
 openidconnect = { version = "3.5.0", features = ["reqwest"] }
 serde = "1.0.217"
 serde_with = "3.11.0"
