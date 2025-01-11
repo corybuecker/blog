@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 axum = "0.7.9"
 bson = { version = "2.13.0", features = ["chrono-0_4", "serde_with-3"] }
-chrono = "0.4.38"
+chrono = "0.4.39"
 comrak = "0.32.0"
 futures = "0.3.31"
 log = "0.4.22"
