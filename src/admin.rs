@@ -56,7 +56,7 @@ pub fn admin_routes(state: Arc<super::SharedState>) -> Router<Arc<super::SharedS
     let pages = Router::new()
         .route("/", get(pages::index).post(pages::create))
         .route("/new", get(pages::new))
-        .route("/:id", get(pages::edit).post(pages::update))
+        .route("/{id}", get(pages::edit).post(pages::update))
         .route_layer(middleware::from_fn_with_state(
             state.clone(),
             require_authentication,

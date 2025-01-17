@@ -131,8 +131,8 @@ async fn main() {
 
     let app = Router::new()
         .route("/", get(home))
-        .route("/post/:slug/", get(remove_slash))
-        .route("/post/:slug", get(page))
+        .route("/post/{slug}/", get(remove_slash))
+        .route("/post/{slug}", get(page))
         .nest_service("/assets", ServeDir::new("static"))
         .nest_service("/images", ServeDir::new("static/images"))
         .nest("/admin", admin::admin_routes(shared_state.clone()))
