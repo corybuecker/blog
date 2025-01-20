@@ -116,9 +116,12 @@ async fn remove_slash(Path(slug): Path<String>) -> Redirect {
 
 async fn sitemap(State(shared_state): State<Arc<SharedState>>) -> Response {
     let database = &shared_state.mongo.database("blog");
+    let mut find_options = FindOptions::builder();
+    let find_options = find_options.sort(doc! {"published_at": -1});
     let collection = database
         .collection::<Page>("pages")
         .find(doc! {"published_at": doc!{"$exists": true}})
+        .with_options(find_options.build())
         .await;
 
     let mut xml = XMLBuilder::new()
@@ -128,9 +131,13 @@ async fn sitemap(State(shared_state): State<Arc<SharedState>>) -> Response {
 
     let mut urlset = XMLElement::new("urlset");
     urlset.add_attribute("xmlns", "http://www.sitemaps.org/schemas/sitemap/0.9");
-
+    let mut current_index = 0;
     if let Ok(mut cursor) = collection {
         while let Some(Ok(page)) = cursor.next().await {
+            if current_index == 0 {
+                current_index = current_index + 1;
+                continue;
+            }
             let mut url = XMLElement::new("url");
             let lastmodts = page
                 .revised_at

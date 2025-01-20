@@ -1,18 +1,18 @@
 {% extends "layout.html" %}
 {% block content %}
-<h1 class="text-3xl">{{page.title}}</h1>
-<p class="mb-2">
-    {% set published_at_long = page.published_at["$date"]["$numberLong"] | int %}
-    {% set published_at = published_at_long / 1000 %}
-    <time datetime="{{published_at | date}}">{{published_at |
-        date}}</time>
-    {% if page.revised_at %}
-    {% set revised_at_long = page.revised_at["$date"]["$numberLong"] | int %}
-    {% set revised_at = revised_at_long / 1000 %}
-    (revised on <time datetime="{{revised_at | date}}">{{revised_at | date}}</time>)
-    {% endif %}
-</p>
-<div class="mb-2 main-content flex flex-col gap-2">
-    {{page.markdown | safe}}
-</div>
+    <article class="prose max-w-none">
+        <h1>{{ page.title }}</h1>
+        <p>
+            {% set published_at_long = page.published_at["$date"]["$numberLong"] | int %}
+            {% set published_at = published_at_long / 1000 %}
+            <time datetime="{{ published_at | date }}">{{published_at |
+            date}}</time>
+            {% if page.revised_at %}
+                {% set revised_at_long = page.revised_at["$date"]["$numberLong"] | int %}
+                {% set revised_at = revised_at_long / 1000 %}
+                (revised on <time datetime="{{ revised_at | date }}">{{ revised_at | date }}</time>)
+            {% endif %}
+        </p>
+        {{ page.markdown | safe }}
+    </article>
 {% endblock content %}

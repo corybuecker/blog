@@ -6,12 +6,12 @@ WORKDIR /build
 RUN cargo build --release
 RUN cp /build/target/release/blog /build/blog
 
-FROM node:alpine AS frontend_builder
+FROM node AS frontend_builder
 RUN mkdir -p /static
 COPY assets /assets
-COPY templates /templates
+COPY templates /assets/templates
 WORKDIR /assets
-RUN npm ci
+RUN npm install
 RUN npx tailwindcss -i css/app.css -o app.css
 RUN npx esbuild --bundle js/app.ts --external:highlight.js --format=esm > app.js
 

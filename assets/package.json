@@ -1,17 +1,18 @@
 {
   "dependencies": {
+    "@tailwindcss/cli": "^4.0.0",
     "@tailwindcss/forms": "^0.5.10",
     "@tailwindcss/typography": "^0.5.16",
     "esbuild": "^0.24.2",
-    "highlight.js": "^11.11.1",
-    "htmx.org": "^2.0.4",
     "tailwindcss": "^4.0.1",
     "typescript": "^5.7.3"
   },
   "scripts": {
-    "start": "npm run css & npm run js &",
-    "css": "npx tailwindcss -i css/app.css -o ../static/app.css --watch",
-    "js": "rm -f ../static/app.js && npx esbuild --bundle js/app.ts --external:highlight.js --format=esm --watch > ../static/app.js"
+    "start": "npm run css & npm run js",
+    "css": "npx tailwindcss --cwd ../ -i assets/css/app.css -o static/app.css",
+    "css:watch": "npx tailwindcss --cwd ../ -i assets/css/app.css -o static/app.css --watch",
+    "js": "rm -f ../static/app.js && npx esbuild --bundle js/app.ts --format=esm > ../static/app.js",
+    "js:watch": "rm -f ../static/app.js && npx esbuild --bundle js/app.ts --format=esm --watch > ../static/app.js"
   },
   "type": "module"
 }
