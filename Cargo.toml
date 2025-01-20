@@ -3,8 +3,6 @@ name = "blog"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
 axum = "0.8.1"
 bson = { version = "2.13.0", features = ["chrono-0_4", "serde_with-3"] }
@@ -22,5 +20,5 @@ tower-cookies = { version = "0.11.0", features = ["signed"] }
 tower-http = { version = "0.6.2", features = ["trace", "fs"] }
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
+xml-builder = { version = "0.5" }
 
-# Also `cargo install diesel_cli --no-default-features --features postgres`.
