@@ -1,13 +1,14 @@
 use std::{env, sync::Arc};
 mod admin;
 use axum::{
+    body::Body,
     extract::{MatchedPath, Path, State},
     http::Request,
     response::{Html, IntoResponse, Redirect, Response},
     routing::get,
     Router,
 };
-use futures::TryStreamExt;
+use futures::{StreamExt, TryStreamExt};
 use mongodb::{bson::doc, options::FindOptions, Client, Collection};
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
@@ -15,8 +16,9 @@ use std::collections::VecDeque;
 use tera::Tera;
 use tower_http::services::ServeDir;
 use tower_http::trace::TraceLayer;
-use tracing::{info_span};
+use tracing::info_span;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+use xml_builder::{XMLBuilder, XMLElement, XMLVersion};
 pub struct SharedState {
     tera: Tera,
     mongo: Client,
@@ -112,6 +114,50 @@ async fn remove_slash(Path(slug): Path<String>) -> Redirect {
     return Redirect::permanent(&redirect);
 }
 
+async fn sitemap(State(shared_state): State<Arc<SharedState>>) -> Response {
+    let database = &shared_state.mongo.database("blog");
+    let collection = database
+        .collection::<Page>("pages")
+        .find(doc! {"published_at": doc!{"$exists": true}})
+        .await;
+
+    let mut xml = XMLBuilder::new()
+        .version(XMLVersion::XML1_1)
+        .encoding("UTF-8".into())
+        .build();
+
+    let mut urlset = XMLElement::new("urlset");
+    urlset.add_attribute("xmlns", "http://www.sitemaps.org/schemas/sitemap/0.9");
+
+    if let Ok(mut cursor) = collection {
+        while let Some(Ok(page)) = cursor.next().await {
+            let mut url = XMLElement::new("url");
+            let lastmodts = page
+                .revised_at
+                .or(page.published_at)
+                .or(Some(page.created_at.into()));
+
+            if let Some(lastmodts) = lastmodts {
+                let mut lastmod = XMLElement::new("lastmod");
+                let _ = lastmod.add_text(lastmodts.to_rfc3339());
+                let _ = url.add_child(lastmod);
+            }
+
+            let mut loc = XMLElement::new("loc");
+            let _ = loc.add_text(format!("https://corybuecker.com/post/{}", page.slug));
+            let _ = url.add_child(loc);
+
+            let _ = urlset.add_child(url);
+        }
+    }
+
+    xml.set_root_element(urlset);
+
+    let mut output = Vec::<u8>::new();
+    let _ = xml.generate(&mut output);
+    Body::from(String::from_utf8(output).unwrap()).into_response()
+}
+
 #[tokio::main]
 async fn main() {
     tracing_subscriber::registry()
@@ -133,6 +179,7 @@ async fn main() {
         .route("/", get(home))
         .route("/post/{slug}/", get(remove_slash))
         .route("/post/{slug}", get(page))
+        .route("/sitemap.xml", get(sitemap))
         .nest_service("/assets", ServeDir::new("static"))
         .nest_service("/images", ServeDir::new("static/images"))
         .nest("/admin", admin::admin_routes(shared_state.clone()))

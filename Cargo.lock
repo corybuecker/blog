@@ -296,6 +296,7 @@ dependencies = [
  "tower-http",
  "tracing",
  "tracing-subscriber",
+ "xml-builder",
 ]
 
 [[package]]
@@ -3893,6 +3894,12 @@ name = "xdg"
 version = "2.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "213b7324336b53d2414b2db8537e56544d981803139155afa84f76eeebb7a546"
+
+[[package]]
+name = "xml-builder"
+version = "0.5.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5ef5f40cd674b9d9814545203f175ac29ffdcb6e006727f4d95797d7badd72e2"
 
 [[package]]
 name = "yaml-rust"
