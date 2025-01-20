@@ -13,7 +13,7 @@ COPY templates /templates
 WORKDIR /assets
 RUN npm ci
 RUN npx tailwindcss -i css/app.css -o app.css
-RUN npx esbuild --bundle js/app.ts --external:highlight.js --external:htmx.org --format=esm > app.js
+RUN npx esbuild --bundle js/app.ts --external:highlight.js --format=esm > app.js
 
 FROM rust:1.84.0-slim
 COPY --from=backend_builder /build/blog /

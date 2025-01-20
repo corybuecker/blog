@@ -1,4 +1,3 @@
-import * as htmx from 'htmx.org';
 import hljs from 'highlight.js/lib/core'
 import elixir from 'highlight.js/lib/languages/elixir'
 import javascript from 'highlight.js/lib/languages/javascript'
@@ -8,10 +7,6 @@ import dockerfile from 'highlight.js/lib/languages/dockerfile'
 import nginx from 'highlight.js/lib/languages/nginx'
 import css from 'highlight.js/lib/languages/css'
 import plaintext from 'highlight.js/lib/languages/plaintext'
-
-declare global {
-  interface Window { htmx: any, afterBoostSwap: any }
-}
 
 hljs.registerLanguage('elixir', elixir)
 hljs.registerLanguage('javascript', javascript)
@@ -30,10 +25,5 @@ const localizeTimeElements = () => {
   }
 }
 
-const afterBoostSwap = () => {
-  localizeTimeElements()
-  hljs.highlightAll()
-}
-
-window.afterBoostSwap = afterBoostSwap
-window.htmx = htmx
+localizeTimeElements()
+hljs.highlightAll()
