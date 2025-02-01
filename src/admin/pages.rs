@@ -7,13 +7,18 @@ use axum::{
     Form,
 };
 use chrono::NaiveDate;
+use comrak::adapters::SyntaxHighlighterAdapter;
 use comrak::markdown_to_html;
+use comrak::markdown_to_html_with_plugins;
 use comrak::Options;
+use comrak::Plugins;
 use futures::TryStreamExt;
 use mongodb::bson::doc;
 use mongodb::bson::oid::ObjectId;
 use mongodb::Collection;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::io::{self, Write};
 use std::str::FromStr;
 use std::sync::Arc;
 use tera::Context;
@@ -105,6 +110,54 @@ pub async fn create(
     return Redirect::to("/admin/pages").into_response();
 }
 
+#[derive(Debug, Copy, Clone)]
+pub struct SyntaxAdapter {}
+
+impl SyntaxAdapter {
+    pub fn new() -> Self {
+        SyntaxAdapter {}
+    }
+}
+
+impl SyntaxHighlighterAdapter for SyntaxAdapter {
+    fn write_highlighted(
+        &self,
+        output: &mut dyn Write,
+        _lang: Option<&str>,
+        code: &str,
+    ) -> io::Result<()> {
+        write!(output, "<span class=\"not-prose\">{}</span>", code)
+    }
+
+    fn write_pre_tag(
+        &self,
+        output: &mut dyn Write,
+        attributes: HashMap<String, String>,
+    ) -> io::Result<()> {
+        if attributes.contains_key("lang") {
+            write!(
+                output,
+                "<pre class=\"not-prose\" lang=\"{}\">",
+                attributes["lang"]
+            )
+        } else {
+            output.write_all(b"<pre class=\"not-prose\">")
+        }
+    }
+
+    fn write_code_tag(
+        &self,
+        output: &mut dyn Write,
+        attributes: HashMap<String, String>,
+    ) -> io::Result<()> {
+        if attributes.contains_key("class") {
+            write!(output, "<code class=\"not-prose {}\">", attributes["class"])
+        } else {
+            output.write_all(b"<code>")
+        }
+    }
+}
+
 pub async fn update(
     State(state): State<Arc<SharedState>>,
     Path(id): Path<String>,
@@ -134,7 +187,13 @@ pub async fn update(
         }
     }
 
-    page.markdown = markdown_to_html(&form.content, &Options::default());
+    let adapter = SyntaxAdapter::new();
+    let options = Options::default();
+    let mut plugins = Plugins::default();
+
+    plugins.render.codefence_syntax_highlighter = Some(&adapter);
+
+    page.markdown = markdown_to_html_with_plugins(&form.content, &options, &plugins);
     page.content = form.content;
     page.description = form.description;
     page.title = form.title;

@@ -1,7 +1,6 @@
 use axum::extract::Query;
 use axum::response::Html;
 use openidconnect::core::{CoreAuthenticationFlow, CoreClient, CoreProviderMetadata};
-use openidconnect::reqwest::async_http_client;
 use openidconnect::{
     AuthorizationCode, ClientId, ClientSecret, CsrfToken, IssuerUrl, Nonce, RedirectUrl, Scope,
     TokenResponse,
@@ -11,10 +10,11 @@ use std::env;
 use tower_cookies::{Cookie, Cookies, Key};
 
 pub async fn login(cookies: Cookies) -> Html<String> {
+    let async_http_client = openidconnect::reqwest::Client::builder().build().unwrap();
     let discovery_url = IssuerUrl::new("https://accounts.google.com".to_string())
         .ok()
         .unwrap();
-    let provider_metadata = CoreProviderMetadata::discover_async(discovery_url, async_http_client)
+    let provider_metadata = CoreProviderMetadata::discover_async(discovery_url, &async_http_client)
         .await
         .unwrap();
 
@@ -62,10 +62,11 @@ pub async fn callback(
     Query(callback): Query<GoogleCallback>,
     cookies: Cookies,
 ) -> Html<&'static str> {
+    let async_http_client = openidconnect::reqwest::Client::builder().build().unwrap();
     let discovery_url = IssuerUrl::new("https://accounts.google.com".to_string())
         .ok()
         .unwrap();
-    let provider_metadata = CoreProviderMetadata::discover_async(discovery_url, async_http_client)
+    let provider_metadata = CoreProviderMetadata::discover_async(discovery_url, &async_http_client)
         .await
         .unwrap();
 
@@ -89,7 +90,8 @@ pub async fn callback(
 
     let token_response = client
         .exchange_code(AuthorizationCode::new(callback.code.to_string()))
-        .request_async(async_http_client)
+        .unwrap()
+        .request_async(&async_http_client)
         .await
         .unwrap();
 
