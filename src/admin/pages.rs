@@ -12,7 +12,6 @@ use comrak::markdown_to_html;
 use comrak::markdown_to_html_with_plugins;
 use comrak::Options;
 use comrak::Plugins;
-use futures::TryStreamExt;
 use mongodb::bson::doc;
 use mongodb::bson::oid::ObjectId;
 use mongodb::Collection;
@@ -41,7 +40,8 @@ pub async fn index(State(state): State<Arc<SharedState>>) -> Response {
 
     let mut pages: Vec<Page> = Vec::new();
 
-    while let Some(mut page) = cursor.try_next().await.unwrap() {
+    while cursor.advance().await.unwrap() {
+        let mut page = cursor.deserialize_current().unwrap();
         page.id = Some(page._id.to_hex());
         pages.push(page)
     }
@@ -51,7 +51,7 @@ pub async fn index(State(state): State<Arc<SharedState>>) -> Response {
 
     let rendered = state.tera.render("admin/index.html", &context).unwrap();
 
-    return Html(rendered).into_response();
+    Html(rendered).into_response()
 }
 
 pub async fn new(State(state): State<Arc<SharedState>>) -> Response {
@@ -107,7 +107,7 @@ pub async fn create(
 
     let _result = collection.insert_one(new_page).await;
 
-    return Redirect::to("/admin/pages").into_response();
+    Redirect::to("/admin/pages").into_response()
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -174,16 +174,14 @@ pub async fn update(
         .unwrap();
 
     if let Some(date) = form.published_at {
-        match NaiveDate::parse_from_str(&date, "%Y-%m-%d") {
-            Ok(date) => page.published_at = Some(date.and_hms_opt(0, 0, 0).unwrap().and_utc()),
-            Err(_) => {}
+        if let Ok(date) = NaiveDate::parse_from_str(&date, "%Y-%m-%d") {
+            page.published_at = Some(date.and_hms_opt(0, 0, 0).unwrap().and_utc())
         }
     }
 
     if let Some(date) = form.revised_at {
-        match NaiveDate::parse_from_str(&date, "%Y-%m-%d") {
-            Ok(date) => page.revised_at = Some(date.and_hms_opt(0, 0, 0).unwrap().and_utc()),
-            Err(_) => {}
+        if let Ok(date) = NaiveDate::parse_from_str(&date, "%Y-%m-%d") {
+            page.revised_at = Some(date.and_hms_opt(0, 0, 0).unwrap().and_utc())
         }
     }
 
@@ -201,5 +199,5 @@ pub async fn update(
 
     let _result = collection.replace_one(doc! {"_id": oid}, page).await;
 
-    return Redirect::to("/admin/pages").into_response();
+    Redirect::to("/admin/pages").into_response()
 }

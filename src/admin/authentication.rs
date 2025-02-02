@@ -51,7 +51,7 @@ pub async fn login(cookies: Cookies) -> Html<String> {
 
     signed_cookies.add(cookie);
 
-    return Html(auth_url.to_string());
+    Html(auth_url.to_string())
 }
 
 #[derive(Deserialize, Debug)]
@@ -127,5 +127,5 @@ pub async fn callback(
         .build();
     signed_cookies.remove(nonce);
 
-    return Html("OK");
+    Html("OK")
 }
