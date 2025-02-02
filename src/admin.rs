@@ -17,12 +17,14 @@ use super::Page;
 
 #[derive(Deserialize, Debug)]
 struct User {
+    #[allow(dead_code)]
     email: String,
 }
 
+#[allow(dead_code)]
 #[derive(Debug)]
 enum AuthenticationError {
-    _NoEmail,
+    NoEmail,
 }
 
 async fn require_authentication(
@@ -63,9 +65,9 @@ pub fn admin_routes(state: Arc<super::SharedState>) -> Router<Arc<super::SharedS
         ))
         .layer(CookieManagerLayer::new());
 
-    return Router::new()
+    Router::new()
         .route("/login", get(authentication::login))
         .route("/login/callback", get(authentication::callback))
         .nest("/pages", pages)
-        .layer(CookieManagerLayer::new());
+        .layer(CookieManagerLayer::new())
 }

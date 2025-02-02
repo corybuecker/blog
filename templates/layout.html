@@ -7,14 +7,16 @@
         <link rel="me" href="https://github.com/corybuecker">
         <link rel="icon"
               type="image/svg+xml"
-              href="/assets/favicon.svg"
+              href="{{ digest_asset(file="favicon.svg") }}"
               color="#ff8a01">
-        <link rel="mask-icon" href="/assets/favicon.svg" color="#ff8a01">
+        <link rel="mask-icon"
+              href="{{ digest_asset(file="favicon.svg") }}"
+              color="#ff8a01">
         {% if description %}
             <meta name="description" content="{{ description }}" />
             <title>{{ title }}</title>
         {% endif %}
-        <link rel="stylesheet" href="/assets/app.css">
+        <link rel="stylesheet" href="{{ digest_asset(file="app.css") }}">
     </head>
     <body class="@container">
         <div class="prose mx-auto px-2 @2xl:px-0">
@@ -55,13 +57,11 @@
                 {% endblock content %}
             </main>
         </div>
-        <script type="module" src="/assets/app.js"></script>
+        <script type="module" src="{{ digest_asset(file="app.js") }}"></script>
         <link rel="stylesheet"
               href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/dark.min.css">
         <script type="module">
             import hljs from 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/es/highlight.min.js';
-            import bash from 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/es/languages/bash.min.js';
-            hljs.registerLanguage('bash', bash);
             hljs.highlightAll();
         </script>
     </body>
