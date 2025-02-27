@@ -3,4 +3,4 @@
 /static/*.css
 /static/*.js
 .env
-/k8s
+/k8s/.claude

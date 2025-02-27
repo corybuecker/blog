@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: blog
+  namespace: blog
+  labels:
+    app: blog
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: blog
+  template:
+    metadata:
+      labels:
+        app: blog
+    spec:
+      containers:
+      - name: blog
+        image: ghcr.io/corybuecker/blog:latest
+        ports:
+        - name: http
+          containerPort: 8000
+        envFrom:
+        - secretRef:
+            name: blog
+        resources:
+          limits:
+            memory: 128M
+            cpu: 250m
+          requests:
+            memory: 128M
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          runAsNonRoot: true
+          seccompProfile:
+            type: RuntimeDefault

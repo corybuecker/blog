@@ -1,16 +1,17 @@
-use axum::{routing::get, Router};
-use mongodb::{bson::doc, Client};
+use anyhow::{Result, anyhow};
+use axum::{Router, routing::get};
+use mongodb::{Client, bson::doc};
 use pages::{
     home::{self},
     sitemap,
 };
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
-use std::{env, error::Error, sync::Arc};
+use std::{env, sync::Arc};
 use tera::Tera;
 use tokio::{
     select,
-    signal::unix::{signal, SignalKind},
+    signal::unix::{SignalKind, signal},
     spawn,
 };
 use tower_http::services::ServeDir;
@@ -58,12 +59,12 @@ async fn run_listener(app: Router) {
 }
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
-    let _ = tracing::subscriber::set_global_default(
+async fn main() -> Result<()> {
+    tracing::subscriber::set_global_default(
         tracing_subscriber::FmtSubscriber::builder()
             .with_max_level(Level::DEBUG)
             .finish(),
-    );
+    )?;
 
     let mongo = Client::with_uri_str(env::var("DATABASE_URL").unwrap())
         .await
@@ -71,7 +72,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let mut tera = Tera::default();
     tera.register_function("digest_asset", digest_asset());
-    embed_templates(&mut tera)?;
+    embed_templates(&mut tera).map_err(|e| anyhow!("Failed to embed templates: {}", e))?;
 
     let shared_state = Arc::new(SharedState { tera, mongo });
 
