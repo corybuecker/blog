@@ -2,25 +2,26 @@ use super::Page;
 use super::SharedState;
 use axum::extract::Path;
 use axum::{
+    Form,
     extract::State,
     response::{Html, IntoResponse, Redirect, Response},
-    Form,
 };
 use chrono::NaiveDate;
+use comrak::Options;
+use comrak::Plugins;
 use comrak::adapters::SyntaxHighlighterAdapter;
 use comrak::markdown_to_html;
 use comrak::markdown_to_html_with_plugins;
-use comrak::Options;
-use comrak::Plugins;
+use mongodb::Collection;
 use mongodb::bson::doc;
 use mongodb::bson::oid::ObjectId;
-use mongodb::Collection;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::io::{self, Write};
 use std::str::FromStr;
 use std::sync::Arc;
 use tera::Context;
+use tracing::debug;
 
 #[derive(Deserialize, Serialize)]
 pub struct PostForm {
@@ -126,6 +127,7 @@ impl SyntaxHighlighterAdapter for SyntaxAdapter {
         _lang: Option<&str>,
         code: &str,
     ) -> io::Result<()> {
+        debug!("{}", code);
         write!(output, "<span class=\"not-prose\">{}</span>", code)
     }
 

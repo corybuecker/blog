@@ -1,15 +1,16 @@
 [package]
 name = "blog"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
+resolver = "3"
 
 [dependencies]
+anyhow = "1.0.96"
 axum = { version = "0.8.2" }
 bson = { version = "2.13.0", features = ["chrono-0_4", "serde_with-3"] }
 chrono = { version = "0.4.40" }
 comrak = { version = "0.35.0" }
 include_dir = { version = "0.7.4", features = ["glob"] }
-log = { version = "0.4.26" }
 mongodb = { version = "3.2.1" }
 openidconnect = { version = "4.0.0", features = ["reqwest"] }
 serde = { version = "1.0.218" }
