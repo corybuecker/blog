@@ -5,9 +5,9 @@ use axum::{
 };
 use bson::doc;
 use mongodb::options::FindOptions;
-use std::{collections::VecDeque, sync::Arc};
+use std::collections::VecDeque;
 
-pub async fn build_response(State(shared_state): State<Arc<SharedState>>) -> Response {
+pub async fn build_response(State(shared_state): State<SharedState>) -> Response {
     let tera = &shared_state.tera;
     let mongo = shared_state
         .mongo

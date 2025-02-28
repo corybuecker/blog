@@ -5,14 +5,13 @@ use axum::{
 };
 use bson::doc;
 use mongodb::Collection;
-use std::sync::Arc;
 
 pub mod home;
 pub mod sitemap;
 
 pub async fn build_response(
     Path(slug): Path<String>,
-    State(shared_state): State<Arc<SharedState>>,
+    State(shared_state): State<SharedState>,
 ) -> Response {
     let tera = &shared_state.tera;
     let database = &shared_state.mongo.database("blog");

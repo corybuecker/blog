@@ -19,7 +19,6 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::io::{self, Write};
 use std::str::FromStr;
-use std::sync::Arc;
 use tera::Context;
 use tracing::debug;
 
@@ -34,7 +33,7 @@ pub struct PostForm {
     title: String,
 }
 
-pub async fn index(State(state): State<Arc<SharedState>>) -> Response {
+pub async fn index(State(state): State<SharedState>) -> Response {
     let collection: Collection<super::Page> = state.mongo.database("blog").collection("pages");
 
     let mut cursor = collection.find(doc! {}).await.unwrap();
@@ -55,7 +54,7 @@ pub async fn index(State(state): State<Arc<SharedState>>) -> Response {
     Html(rendered).into_response()
 }
 
-pub async fn new(State(state): State<Arc<SharedState>>) -> Response {
+pub async fn new(State(state): State<SharedState>) -> Response {
     let rendered = state
         .tera
         .render("admin/new.html", &Context::new())
@@ -64,7 +63,7 @@ pub async fn new(State(state): State<Arc<SharedState>>) -> Response {
     Html(rendered).into_response()
 }
 
-pub async fn edit(State(state): State<Arc<SharedState>>, Path(id): Path<String>) -> Response {
+pub async fn edit(State(state): State<SharedState>, Path(id): Path<String>) -> Response {
     let tera = &state.tera;
     let database: &mongodb::Database = &state.mongo.database("blog");
     let mut context = tera::Context::new();
@@ -86,7 +85,7 @@ pub async fn edit(State(state): State<Arc<SharedState>>, Path(id): Path<String>)
 }
 
 pub async fn create(
-    State(shared_state): State<Arc<SharedState>>,
+    State(shared_state): State<SharedState>,
     Form(form): Form<PostForm>,
 ) -> Response {
     let collection = shared_state.mongo.database("blog").collection("pages");
@@ -161,7 +160,7 @@ impl SyntaxHighlighterAdapter for SyntaxAdapter {
 }
 
 pub async fn update(
-    State(state): State<Arc<SharedState>>,
+    State(state): State<SharedState>,
     Path(id): Path<String>,
     Form(form): Form<PostForm>,
 ) -> Response {
