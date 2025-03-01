@@ -7,7 +7,7 @@ use pages::{
 };
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
-use std::{env, sync::Arc};
+use std::env;
 use tera::Tera;
 use tokio::{
     select,
@@ -22,6 +22,7 @@ mod admin;
 mod pages;
 mod utils;
 
+#[derive(Clone, Debug)]
 pub struct SharedState {
     tera: Tera,
     mongo: Client,
@@ -74,7 +75,7 @@ async fn main() -> Result<()> {
     tera.register_function("digest_asset", digest_asset());
     embed_templates(&mut tera).map_err(|e| anyhow!("Failed to embed templates: {}", e))?;
 
-    let shared_state = Arc::new(SharedState { tera, mongo });
+    let shared_state = SharedState { tera, mongo };
 
     let app = Router::new()
         .route("/", get(home::build_response))
@@ -84,7 +85,7 @@ async fn main() -> Result<()> {
         .nest_service("/assets", ServeDir::new("static"))
         .nest_service("/images", ServeDir::new("static/images"))
         .nest("/admin", admin::admin_routes(shared_state.clone()))
-        .with_state(shared_state.clone());
+        .with_state(shared_state);
 
     select! {
       _ = spawn(async { run_listener(app).await }) => {},

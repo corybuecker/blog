@@ -6,10 +6,9 @@ use axum::{
 };
 use bson::doc;
 use mongodb::options::FindOptions;
-use std::sync::Arc;
 use xml_builder::{XMLBuilder, XMLElement, XMLVersion};
 
-pub async fn build_response(State(shared_state): State<Arc<SharedState>>) -> Response {
+pub async fn build_response(State(shared_state): State<SharedState>) -> Response {
     let database = &shared_state.mongo.database("blog");
     let find_options = FindOptions::builder();
     let find_options = find_options.sort(doc! {"published_at": -1});
@@ -30,11 +29,17 @@ pub async fn build_response(State(shared_state): State<Arc<SharedState>>) -> Res
     if let Ok(mut cursor) = collection {
         while cursor.advance().await.unwrap() {
             let page = cursor.deserialize_current().unwrap();
-            if current_index == 0 {
-                current_index += 1;
-                continue;
-            }
             let mut url = XMLElement::new("url");
+            if current_index == 0 {
+                let mut loc = XMLElement::new("loc");
+                let _ = loc.add_text("https://corybuecker.com".to_string());
+                let _ = url.add_child(loc);
+            } else {
+                let mut loc = XMLElement::new("loc");
+                let _ = loc.add_text(format!("https://corybuecker.com/post/{}", page.slug));
+                let _ = url.add_child(loc);
+            }
+
             let lastmodts = page
                 .revised_at
                 .or(page.published_at)
@@ -46,11 +51,8 @@ pub async fn build_response(State(shared_state): State<Arc<SharedState>>) -> Res
                 let _ = url.add_child(lastmod);
             }
 
-            let mut loc = XMLElement::new("loc");
-            let _ = loc.add_text(format!("https://corybuecker.com/post/{}", page.slug));
-            let _ = url.add_child(loc);
-
             let _ = urlset.add_child(url);
+            current_index += 1;
         }
     }
 

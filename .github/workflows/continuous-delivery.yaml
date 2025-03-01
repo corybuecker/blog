@@ -20,5 +20,5 @@ jobs:
       with:
         push: true
         tags: ghcr.io/corybuecker/blog:latest
-        cache-from: type=registry,ref=ghcr.io/corybuecker/blog:latest
-        cache-to: type=inline
+        cache-from: type=gha,mode=max
+        cache-to: type=gha
