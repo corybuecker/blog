@@ -1,5 +1,5 @@
-use super::Page;
-use super::SharedState;
+use super::types::PostForm;
+use crate::types::{Page, SharedState};
 use axum::extract::Path;
 use axum::{
     Form,
@@ -15,26 +15,14 @@ use comrak::markdown_to_html_with_plugins;
 use mongodb::Collection;
 use mongodb::bson::doc;
 use mongodb::bson::oid::ObjectId;
-use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::io::{self, Write};
 use std::str::FromStr;
 use tera::Context;
 use tracing::debug;
 
-#[derive(Deserialize, Serialize)]
-pub struct PostForm {
-    content: String,
-    description: String,
-    preview: String,
-    published_at: Option<String>,
-    revised_at: Option<String>,
-    slug: String,
-    title: String,
-}
-
 pub async fn index(State(state): State<SharedState>) -> Response {
-    let collection: Collection<super::Page> = state.mongo.database("blog").collection("pages");
+    let collection: Collection<Page> = state.mongo.database("blog").collection("pages");
 
     let mut cursor = collection.find(doc! {}).await.unwrap();
 
