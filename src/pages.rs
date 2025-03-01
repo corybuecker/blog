@@ -1,4 +1,4 @@
-use crate::{Page, SharedState};
+use crate::types::{Page, SharedState};
 use axum::{
     extract::{Path, State},
     response::{Html, IntoResponse, Redirect, Response},

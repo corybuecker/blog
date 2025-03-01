@@ -1,6 +1,4 @@
-use std::env;
-mod pages;
-use super::SharedState;
+use crate::types::SharedState;
 use axum::{
     Router,
     extract::{Request, State},
@@ -10,22 +8,13 @@ use axum::{
     routing::get,
 };
 use mongodb::bson::doc;
-use serde::Deserialize;
+use std::env;
 use tower_cookies::{CookieManagerLayer, Cookies, Key};
+use types::User;
+
 mod authentication;
-use super::Page;
-
-#[derive(Deserialize, Debug)]
-struct User {
-    #[allow(dead_code)]
-    email: String,
-}
-
-#[allow(dead_code)]
-#[derive(Debug)]
-enum AuthenticationError {
-    NoEmail,
-}
+mod pages;
+mod types;
 
 async fn require_authentication(
     State(state): State<SharedState>,

@@ -1,12 +1,10 @@
 use anyhow::{Result, anyhow};
 use axum::{Router, routing::get};
-use mongodb::{Client, bson::doc};
+use mongodb::Client;
 use pages::{
     home::{self},
     sitemap,
 };
-use serde::{Deserialize, Serialize};
-use serde_with::serde_as;
 use std::env;
 use tera::Tera;
 use tokio::{
@@ -16,38 +14,13 @@ use tokio::{
 };
 use tower_http::services::ServeDir;
 use tracing::Level;
+use types::SharedState;
 use utils::tera::{digest_asset, embed_templates};
 
 mod admin;
 mod pages;
+mod types;
 mod utils;
-
-#[derive(Clone, Debug)]
-pub struct SharedState {
-    tera: Tera,
-    mongo: Client,
-}
-
-#[serde_as]
-#[derive(Serialize, Deserialize, Debug)]
-struct Page {
-    _id: mongodb::bson::oid::ObjectId,
-    content: String,
-    created_at: mongodb::bson::DateTime,
-    description: String,
-    id: Option<String>,
-    markdown: String,
-    preview: String,
-
-    #[serde_as(as = "Option<bson::DateTime>")]
-    published_at: Option<chrono::DateTime<chrono::Utc>>,
-
-    #[serde_as(as = "Option<bson::DateTime>")]
-    revised_at: Option<chrono::DateTime<chrono::Utc>>,
-    slug: String,
-    title: String,
-    updated_at: mongodb::bson::DateTime,
-}
 
 async fn signal_listener() {
     let mut signal = signal(SignalKind::terminate()).unwrap();
