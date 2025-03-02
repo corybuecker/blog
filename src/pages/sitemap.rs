@@ -1,8 +1,6 @@
 use crate::types::{AppError, Page, SharedState};
-use axum::{
-    body::Body,
-    extract::State,
-};
+use anyhow::Context;
+use axum::{body::Body, extract::State};
 use bson::doc;
 use mongodb::options::FindOptions;
 use xml_builder::{XMLBuilder, XMLElement, XMLVersion};
@@ -26,8 +24,8 @@ pub async fn build_response(State(shared_state): State<SharedState>) -> Result<B
     urlset.add_attribute("xmlns", "http://www.sitemaps.org/schemas/sitemap/0.9");
     let mut current_index = 0;
     if let Ok(mut cursor) = collection {
-        while cursor.advance().await.unwrap() {
-            let page = cursor.deserialize_current().unwrap();
+        while cursor.advance().await.context("database error")? {
+            let page = cursor.deserialize_current().context("database error")?;
             let mut url = XMLElement::new("url");
             if current_index == 0 {
                 let mut loc = XMLElement::new("loc");
