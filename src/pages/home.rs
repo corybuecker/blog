@@ -1,15 +1,37 @@
 use crate::types::{Page, SharedState};
-use anyhow::Result;
+use anyhow::Context;
 use axum::{
     extract::State,
     http::StatusCode,
-    response::{Html, IntoResponse, Response},
+    response::{Html, IntoResponse},
 };
 use bson::doc;
 use mongodb::options::FindOptions;
 use std::collections::VecDeque;
+use tracing::error;
 
-pub async fn build_response(State(shared_state): State<SharedState>) -> Result<Html<String>> {
+pub struct AppError(anyhow::Error);
+
+impl From<anyhow::Error> for AppError {
+    fn from(err: anyhow::Error) -> Self {
+        AppError(err)
+    }
+}
+
+impl IntoResponse for AppError {
+    fn into_response(self) -> axum::response::Response {
+        error!("{}", self.0);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "Something has gone wrong.",
+        )
+            .into_response()
+    }
+}
+
+pub async fn build_response(
+    State(shared_state): State<SharedState>,
+) -> Result<Html<String>, AppError> {
     let tera = &shared_state.tera;
     let mongo = shared_state
         .mongo
@@ -25,16 +47,18 @@ pub async fn build_response(State(shared_state): State<SharedState>) -> Result<H
         .find(doc! {"published_at": doc!{"$lte": mongodb::bson::DateTime::now()}})
         .with_options(find_options)
         .await
-        .unwrap();
+        .context("database error")?;
 
     let mut pages: VecDeque<Page> = VecDeque::new();
 
-    while cur.advance().await.unwrap() {
-        let page = cur.deserialize_current().unwrap();
+    while cur.advance().await.context("database error")? {
+        let page = cur.deserialize_current().context("database error")?;
         pages.push_back(page)
     }
 
-    let homepage = pages.pop_front().unwrap();
+    let homepage = pages
+        .pop_front()
+        .context("cannot render a homepage without any pages")?;
 
     context.insert("pages", &pages);
     context.insert("homepage", &homepage);
@@ -44,7 +68,9 @@ pub async fn build_response(State(shared_state): State<SharedState>) -> Result<H
     title.push_str(" - Cory Buecker");
     context.insert("title", &title);
 
-    let rendered = tera.render("pages/home.html", &context).unwrap();
+    let rendered = tera
+        .render("pages/home.html", &context)
+        .context("could not render template")?;
 
     Ok(Html(rendered))
 }
