@@ -19,7 +19,6 @@ use mongodb::bson::oid::ObjectId;
 use std::collections::HashMap;
 use std::io::{self, Write};
 use std::str::FromStr;
-use tracing::debug;
 
 pub async fn index(State(state): State<SharedState>) -> Result<Html<String>, AppError> {
     let collection: Collection<Page> = state.mongo.database("blog").collection("pages");
@@ -125,8 +124,7 @@ impl SyntaxHighlighterAdapter for SyntaxAdapter {
         _lang: Option<&str>,
         code: &str,
     ) -> io::Result<()> {
-        debug!("{}", code);
-        write!(output, "<span class=\"not-prose\">{}</span>", code)
+        write!(output, "{}", code)
     }
 
     fn write_pre_tag(
