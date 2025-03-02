@@ -19,7 +19,6 @@ use mongodb::bson::oid::ObjectId;
 use std::collections::HashMap;
 use std::io::{self, Write};
 use std::str::FromStr;
-use tracing::debug;
 
 pub async fn index(State(state): State<SharedState>) -> Result<Html<String>, AppError> {
     let collection: Collection<Page> = state.mongo.database("blog").collection("pages");
