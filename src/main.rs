@@ -7,13 +7,9 @@ use pages::{
 };
 use std::env;
 use tera::Tera;
-use tokio::{
-    select,
-    signal::unix::{SignalKind, signal},
-    spawn,
-};
-use tower_http::services::ServeDir;
-use tracing::Level;
+use tokio::signal::unix::SignalKind;
+use tower_http::{services::ServeDir, trace::TraceLayer};
+use tracing::{Level, info};
 use types::SharedState;
 use utils::tera::{digest_asset, embed_templates};
 
@@ -21,16 +17,6 @@ mod admin;
 mod pages;
 mod types;
 mod utils;
-
-async fn signal_listener() {
-    let mut signal = signal(SignalKind::terminate()).unwrap();
-    signal.recv().await;
-}
-
-async fn run_listener(app: Router) {
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:8000").await.unwrap();
-    axum::serve(listener, app).await.unwrap();
-}
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -40,16 +26,13 @@ async fn main() -> Result<()> {
             .finish(),
     )?;
 
-    let mongo = Client::with_uri_str(env::var("DATABASE_URL").unwrap())
-        .await
-        .unwrap();
-
+    let mongo = Client::with_uri_str(env::var("DATABASE_URL").unwrap()).await?;
     let mut tera = Tera::default();
+
     tera.register_function("digest_asset", digest_asset());
     embed_templates(&mut tera).map_err(|e| anyhow!("Failed to embed templates: {}", e))?;
 
     let shared_state = SharedState { tera, mongo };
-
     let app = Router::new()
         .route("/", get(home::build_response))
         .route("/post/{slug}/", get(pages::remove_slash))
@@ -58,12 +41,19 @@ async fn main() -> Result<()> {
         .nest_service("/assets", ServeDir::new("static"))
         .nest_service("/images", ServeDir::new("static/images"))
         .nest("/admin", admin::admin_routes(shared_state.clone()))
-        .with_state(shared_state);
+        .with_state(shared_state)
+        .layer(TraceLayer::new_for_http());
 
-    select! {
-      _ = spawn(async { run_listener(app).await }) => {},
-      _ = spawn(async { signal_listener().await }) => {}
-    }
+    let shutdown_signal = async {
+        let mut signal = tokio::signal::unix::signal(SignalKind::terminate())
+            .expect("failed to install SIGTERM handler");
+        signal.recv().await;
+        info!("Received shutdown signal, gracefully shutting down");
+    };
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:8000").await?;
+    axum::serve(listener, app)
+        .with_graceful_shutdown(shutdown_signal)
+        .await?;
 
     Ok(())
 }
