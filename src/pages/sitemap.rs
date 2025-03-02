@@ -2,7 +2,6 @@ use crate::types::{AppError, Page, SharedState};
 use axum::{
     body::Body,
     extract::State,
-    response::{IntoResponse, Response},
 };
 use bson::doc;
 use mongodb::options::FindOptions;
