@@ -8,7 +8,7 @@ use pages::{
 use std::env;
 use tera::Tera;
 use tokio::signal::unix::SignalKind;
-use tower_http::services::ServeDir;
+use tower_http::{services::ServeDir, trace::TraceLayer};
 use tracing::{Level, info};
 use types::SharedState;
 use utils::tera::{digest_asset, embed_templates};
@@ -41,7 +41,8 @@ async fn main() -> Result<()> {
         .nest_service("/assets", ServeDir::new("static"))
         .nest_service("/images", ServeDir::new("static/images"))
         .nest("/admin", admin::admin_routes(shared_state.clone()))
-        .with_state(shared_state);
+        .with_state(shared_state)
+        .layer(TraceLayer::new_for_http());
 
     let shutdown_signal = async {
         let mut signal = tokio::signal::unix::signal(SignalKind::terminate())
