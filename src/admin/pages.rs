@@ -125,8 +125,7 @@ impl SyntaxHighlighterAdapter for SyntaxAdapter {
         _lang: Option<&str>,
         code: &str,
     ) -> io::Result<()> {
-        debug!("{}", code);
-        write!(output, "<span class=\"not-prose\">{}</span>", code)
+        write!(output, "{}", code)
     }
 
     fn write_pre_tag(
