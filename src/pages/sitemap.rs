@@ -1,4 +1,4 @@
-use crate::types::{Page, SharedState};
+use crate::types::{AppError, Page, SharedState};
 use axum::{
     body::Body,
     extract::State,
@@ -8,7 +8,7 @@ use bson::doc;
 use mongodb::options::FindOptions;
 use xml_builder::{XMLBuilder, XMLElement, XMLVersion};
 
-pub async fn build_response(State(shared_state): State<SharedState>) -> Response {
+pub async fn build_response(State(shared_state): State<SharedState>) -> Result<Body, AppError> {
     let database = &shared_state.mongo.database("blog");
     let find_options = FindOptions::builder();
     let find_options = find_options.sort(doc! {"published_at": -1});
@@ -60,5 +60,6 @@ pub async fn build_response(State(shared_state): State<SharedState>) -> Response
 
     let mut output = Vec::<u8>::new();
     let _ = xml.generate(&mut output);
-    Body::from(String::from_utf8(output).unwrap()).into_response()
+
+    Ok(Body::from(String::from_utf8(output).unwrap()))
 }
