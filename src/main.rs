@@ -1,5 +1,9 @@
-use anyhow::{Result, anyhow};
-use axum::{Router, routing::get};
+use axum::{
+    Router,
+    http::StatusCode,
+    response::{IntoResponse, Response},
+    routing::get,
+};
 use mongodb::Client;
 use pages::{
     home::{self},
@@ -19,7 +23,7 @@ mod types;
 mod utils;
 
 #[tokio::main]
-async fn main() -> Result<()> {
+async fn main() -> anyhow::Result<()> {
     tracing::subscriber::set_global_default(
         tracing_subscriber::FmtSubscriber::builder()
             .with_max_level(Level::DEBUG)
@@ -30,7 +34,7 @@ async fn main() -> Result<()> {
     let mut tera = Tera::default();
 
     tera.register_function("digest_asset", digest_asset());
-    embed_templates(&mut tera).map_err(|e| anyhow!("Failed to embed templates: {}", e))?;
+    embed_templates(&mut tera).map_err(|e| anyhow::anyhow!("Failed to embed templates: {}", e))?;
 
     let shared_state = SharedState { tera, mongo };
     let app = Router::new()

@@ -1,13 +1,15 @@
 use crate::types::{Page, SharedState};
+use anyhow::Result;
 use axum::{
     extract::State,
+    http::StatusCode,
     response::{Html, IntoResponse, Response},
 };
 use bson::doc;
 use mongodb::options::FindOptions;
 use std::collections::VecDeque;
 
-pub async fn build_response(State(shared_state): State<SharedState>) -> Response {
+pub async fn build_response(State(shared_state): State<SharedState>) -> Result<Html<String>> {
     let tera = &shared_state.tera;
     let mongo = shared_state
         .mongo
@@ -44,5 +46,5 @@ pub async fn build_response(State(shared_state): State<SharedState>) -> Response
 
     let rendered = tera.render("pages/home.html", &context).unwrap();
 
-    Html(rendered).into_response()
+    Ok(Html(rendered))
 }
