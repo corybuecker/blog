@@ -1,11 +1,11 @@
-use std::error::Error;
+use anyhow::Result;
 use std::fs::DirEntry;
 use std::{fs::read_dir, path::Path};
 
 pub mod tera;
 
 #[allow(dead_code)]
-pub fn read_all_files(path: &Path) -> Result<Vec<DirEntry>, Box<dyn Error>> {
+pub fn read_all_files(path: &Path) -> Result<Vec<DirEntry>> {
     let mut files = Vec::new();
 
     for file in read_dir(path)? {

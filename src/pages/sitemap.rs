@@ -1,14 +1,11 @@
-use crate::types::{Page, SharedState};
-use axum::{
-    body::Body,
-    extract::State,
-    response::{IntoResponse, Response},
-};
+use crate::types::{AppError, Page, SharedState};
+use anyhow::Context;
+use axum::{body::Body, extract::State};
 use bson::doc;
 use mongodb::options::FindOptions;
 use xml_builder::{XMLBuilder, XMLElement, XMLVersion};
 
-pub async fn build_response(State(shared_state): State<SharedState>) -> Response {
+pub async fn build_response(State(shared_state): State<SharedState>) -> Result<Body, AppError> {
     let database = &shared_state.mongo.database("blog");
     let find_options = FindOptions::builder();
     let find_options = find_options.sort(doc! {"published_at": -1});
@@ -27,8 +24,8 @@ pub async fn build_response(State(shared_state): State<SharedState>) -> Response
     urlset.add_attribute("xmlns", "http://www.sitemaps.org/schemas/sitemap/0.9");
     let mut current_index = 0;
     if let Ok(mut cursor) = collection {
-        while cursor.advance().await.unwrap() {
-            let page = cursor.deserialize_current().unwrap();
+        while cursor.advance().await.context("database error")? {
+            let page = cursor.deserialize_current().context("database error")?;
             let mut url = XMLElement::new("url");
             if current_index == 0 {
                 let mut loc = XMLElement::new("loc");
@@ -60,5 +57,8 @@ pub async fn build_response(State(shared_state): State<SharedState>) -> Response
 
     let mut output = Vec::<u8>::new();
     let _ = xml.generate(&mut output);
-    Body::from(String::from_utf8(output).unwrap()).into_response()
+
+    Ok(Body::from(
+        String::from_utf8(output).context("could not render XML")?,
+    ))
 }

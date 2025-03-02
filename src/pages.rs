@@ -1,7 +1,8 @@
-use crate::types::{Page, SharedState};
+use crate::types::{AppError, Page, SharedState};
+use anyhow::Context;
 use axum::{
     extract::{Path, State},
-    response::{Html, IntoResponse, Redirect, Response},
+    response::{Html, Redirect},
 };
 use bson::doc;
 use mongodb::Collection;
@@ -12,7 +13,7 @@ pub mod sitemap;
 pub async fn build_response(
     Path(slug): Path<String>,
     State(shared_state): State<SharedState>,
-) -> Response {
+) -> Result<Html<String>, AppError> {
     let tera = &shared_state.tera;
     let database = &shared_state.mongo.database("blog");
     let mut context = tera::Context::new();
@@ -21,8 +22,8 @@ pub async fn build_response(
     let page = collection
         .find_one(doc! {"slug": slug})
         .await
-        .unwrap()
-        .unwrap();
+        .context("database error")?
+        .context("no page found")?;
 
     context.insert("page", &page);
     context.insert("test", &page.published_at);
@@ -32,9 +33,11 @@ pub async fn build_response(
     title.push_str(" - Cory Buecker");
     context.insert("title", &title);
 
-    let rendered = tera.render("pages/page.html", &context).unwrap();
+    let rendered = tera
+        .render("pages/page.html", &context)
+        .context("could not render template")?;
 
-    Html(rendered).into_response()
+    Ok(Html(rendered))
 }
 
 pub async fn remove_slash(Path(slug): Path<String>) -> Redirect {
