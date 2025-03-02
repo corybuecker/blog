@@ -1,10 +1,11 @@
 use super::types::PostForm;
-use crate::types::{Page, SharedState};
+use crate::types::{AppError, Page, SharedState};
+use anyhow::Context;
 use axum::extract::Path;
 use axum::{
     Form,
     extract::State,
-    response::{Html, IntoResponse, Redirect, Response},
+    response::{Html, Redirect},
 };
 use chrono::NaiveDate;
 use comrak::Options;
@@ -18,18 +19,17 @@ use mongodb::bson::oid::ObjectId;
 use std::collections::HashMap;
 use std::io::{self, Write};
 use std::str::FromStr;
-use tera::Context;
 use tracing::debug;
 
-pub async fn index(State(state): State<SharedState>) -> Response {
+pub async fn index(State(state): State<SharedState>) -> Result<Html<String>, AppError> {
     let collection: Collection<Page> = state.mongo.database("blog").collection("pages");
 
-    let mut cursor = collection.find(doc! {}).await.unwrap();
+    let mut cursor = collection.find(doc! {}).await.context("database error")?;
 
     let mut pages: Vec<Page> = Vec::new();
 
-    while cursor.advance().await.unwrap() {
-        let mut page = cursor.deserialize_current().unwrap();
+    while cursor.advance().await.context("database error")? {
+        let mut page = cursor.deserialize_current().context("database error")?;
         page.id = Some(page._id.to_hex());
         pages.push(page)
     }
@@ -37,45 +37,53 @@ pub async fn index(State(state): State<SharedState>) -> Response {
     let mut context = tera::Context::new();
     context.insert("pages", &pages);
 
-    let rendered = state.tera.render("admin/index.html", &context).unwrap();
-
-    Html(rendered).into_response()
-}
-
-pub async fn new(State(state): State<SharedState>) -> Response {
     let rendered = state
         .tera
-        .render("admin/new.html", &Context::new())
-        .unwrap();
+        .render("admin/index.html", &context)
+        .context("could not render template")?;
 
-    Html(rendered).into_response()
+    Ok(Html(rendered))
 }
 
-pub async fn edit(State(state): State<SharedState>, Path(id): Path<String>) -> Response {
+pub async fn new(State(state): State<SharedState>) -> Result<Html<String>, AppError> {
+    let rendered = state
+        .tera
+        .render("admin/new.html", &tera::Context::new())
+        .context("could not render template")?;
+
+    Ok(Html(rendered))
+}
+
+pub async fn edit(
+    State(state): State<SharedState>,
+    Path(id): Path<String>,
+) -> Result<Html<String>, AppError> {
     let tera = &state.tera;
     let database: &mongodb::Database = &state.mongo.database("blog");
     let mut context = tera::Context::new();
-    let oid = ObjectId::from_str(&id).unwrap();
+    let oid = ObjectId::from_str(&id).context("invalid ID")?;
 
     let collection: Collection<Page> = database.collection("pages");
     let mut page = collection
         .find_one(doc! {"_id": oid})
         .await
-        .unwrap()
-        .unwrap();
+        .context("database error")?
+        .context("could not find page")?;
 
     page.id = Some(page._id.to_string());
 
     context.insert("page", &page);
-    let rendered = tera.render("admin/edit.html", &context).unwrap();
+    let rendered = tera
+        .render("admin/edit.html", &context)
+        .context("error rendering template")?;
 
-    Html(rendered).into_response()
+    Ok(Html(rendered))
 }
 
 pub async fn create(
     State(shared_state): State<SharedState>,
     Form(form): Form<PostForm>,
-) -> Response {
+) -> Result<Redirect, AppError> {
     let collection = shared_state.mongo.database("blog").collection("pages");
 
     let new_page = Page {
@@ -93,9 +101,12 @@ pub async fn create(
         updated_at: mongodb::bson::DateTime::now(),
     };
 
-    let _result = collection.insert_one(new_page).await;
+    let _result = collection
+        .insert_one(new_page)
+        .await
+        .context("could not create page")?;
 
-    Redirect::to("/admin/pages").into_response()
+    Ok(Redirect::to("/admin/pages"))
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -151,16 +162,16 @@ pub async fn update(
     State(state): State<SharedState>,
     Path(id): Path<String>,
     Form(form): Form<PostForm>,
-) -> Response {
+) -> Result<Redirect, AppError> {
     let database: &mongodb::Database = &state.mongo.database("blog");
     let collection: Collection<Page> = database.collection("pages");
-    let oid = ObjectId::from_str(&id).unwrap();
+    let oid = ObjectId::from_str(&id).context("invalid ID")?;
 
     let mut page = collection
         .find_one(doc! {"_id": oid})
         .await
-        .unwrap()
-        .unwrap();
+        .context("database error")?
+        .context("could not find page")?;
 
     if let Some(date) = form.published_at {
         if let Ok(date) = NaiveDate::parse_from_str(&date, "%Y-%m-%d") {
@@ -188,5 +199,5 @@ pub async fn update(
 
     let _result = collection.replace_one(doc! {"_id": oid}, page).await;
 
-    Redirect::to("/admin/pages").into_response()
+    Ok(Redirect::to("/admin/pages"))
 }

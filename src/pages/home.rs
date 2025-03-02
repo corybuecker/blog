@@ -1,13 +1,13 @@
-use crate::types::{Page, SharedState};
-use axum::{
-    extract::State,
-    response::{Html, IntoResponse, Response},
-};
+use crate::types::{AppError, Page, SharedState};
+use anyhow::Context;
+use axum::{extract::State, response::Html};
 use bson::doc;
 use mongodb::options::FindOptions;
 use std::collections::VecDeque;
 
-pub async fn build_response(State(shared_state): State<SharedState>) -> Response {
+pub async fn build_response(
+    State(shared_state): State<SharedState>,
+) -> Result<Html<String>, AppError> {
     let tera = &shared_state.tera;
     let mongo = shared_state
         .mongo
@@ -23,16 +23,18 @@ pub async fn build_response(State(shared_state): State<SharedState>) -> Response
         .find(doc! {"published_at": doc!{"$lte": mongodb::bson::DateTime::now()}})
         .with_options(find_options)
         .await
-        .unwrap();
+        .context("database error")?;
 
     let mut pages: VecDeque<Page> = VecDeque::new();
 
-    while cur.advance().await.unwrap() {
-        let page = cur.deserialize_current().unwrap();
+    while cur.advance().await.context("database error")? {
+        let page = cur.deserialize_current().context("database error")?;
         pages.push_back(page)
     }
 
-    let homepage = pages.pop_front().unwrap();
+    let homepage = pages
+        .pop_front()
+        .context("cannot render a homepage without any pages")?;
 
     context.insert("pages", &pages);
     context.insert("homepage", &homepage);
@@ -42,7 +44,9 @@ pub async fn build_response(State(shared_state): State<SharedState>) -> Response
     title.push_str(" - Cory Buecker");
     context.insert("title", &title);
 
-    let rendered = tera.render("pages/home.html", &context).unwrap();
+    let rendered = tera
+        .render("pages/home.html", &context)
+        .context("could not render template")?;
 
-    Html(rendered).into_response()
+    Ok(Html(rendered))
 }
