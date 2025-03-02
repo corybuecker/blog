@@ -1,7 +1,5 @@
 use axum::{
     Router,
-    http::StatusCode,
-    response::{IntoResponse, Response},
     routing::get,
 };
 use mongodb::Client;
