@@ -25,22 +25,18 @@ const recordPageview = (): undefined => {
 recordPageview()
 
 const trackAnchor = (element: HTMLAnchorElement): undefined => {
+  const linkUrl = URL.parse(element)
+
   element.addEventListener('click', event => {
     const analyticsUrl = new URL('https://exlytics.corybuecker.com')
-    const href = event.target.getAttribute("href")
-    let linkUrl
-    if (href.startsWith("/")) {
-      linkUrl = URL.parse(`${window.location.host}${href}`)
-    } else {
-      linkUrl = URL.parse(href)
-    }
+
     const data = {
       path: linkUrl.pathname,
       host: linkUrl.host,
       event: "link:click",
       method: "GET"
     }
-    console.log(data)
+
     navigator.sendBeacon(analyticsUrl.toString(), JSON.stringify(data))
     return
   })
