@@ -14,7 +14,7 @@ spec:
     metadata:
       labels:
         app: blog
-        version: "1741133131"
+        version: "1741218306"
     spec:
       containers:
       - name: blog

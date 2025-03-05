@@ -16,10 +16,9 @@ jobs:
   test:
     runs-on: ubuntu-latest
     env:
-      DATABASE_URL: "mongodb://localhost:27017/blog?retryWrites=true&w=majority&directConnection=true"
+      DATABASE_URL: "postgres://postgres@localhost:5432/postgres"
     steps:
-      - run: docker run --name mongo -d -p 27017:27017 mongo:8.0.4 --replSet rs0
-      - run: docker exec mongo mongosh --eval "rs.initiate()"
+      - run: docker run --name postgres -d -p 5432:5432 -e POSTGRES_HOST_AUTH_METHOD=trust postgres:17.4
       - uses: actions/checkout@v4
       - uses: actions-rust-lang/setup-rust-toolchain@v1
       - run: cargo test
