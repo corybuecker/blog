@@ -1,4 +1,4 @@
-use include_dir::{include_dir, Dir};
+use include_dir::{Dir, include_dir};
 use std::{collections::HashMap, time::SystemTime};
 use tera::{Function, Tera, Value};
 

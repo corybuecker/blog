@@ -7,17 +7,15 @@ use axum::{
     response::{IntoResponse, Response},
     routing::get,
 };
-use mongodb::bson::doc;
-use std::env;
+use std::{env, sync::Arc};
 use tower_cookies::{CookieManagerLayer, Cookies, Key};
-use types::User;
 
 mod authentication;
 mod pages;
 mod types;
 
 async fn require_authentication(
-    State(state): State<SharedState>,
+    State(state): State<Arc<SharedState>>,
     cookies: Cookies,
     request: Request,
     next: Next,
@@ -27,15 +25,21 @@ async fn require_authentication(
         .get("email");
 
     if email.is_some() {
-        let mongo = state.mongo.database("blog").collection::<User>("users");
-
-        let result = mongo
-            .find_one(doc! {"email":  email.unwrap().value().to_string() })
+        let email = email.unwrap().value().to_owned();
+        let client = &state.client;
+        let result = client
+            .query_one(
+                "SELECT true AS exists FROM users WHERE email = $1 LIMIT 1",
+                &[&email],
+            )
             .await;
 
         match result {
-            Ok(None) => StatusCode::FORBIDDEN.into_response(),
-            Ok(_) => next.run(request).await,
+            Ok(result) => match result.try_get("exists") {
+                Ok(true) => next.run(request).await,
+                Ok(_) => StatusCode::FORBIDDEN.into_response(),
+                Err(_) => StatusCode::FORBIDDEN.into_response(),
+            },
             Err(_) => StatusCode::FORBIDDEN.into_response(),
         }
     } else {
@@ -43,7 +47,7 @@ async fn require_authentication(
     }
 }
 
-pub fn admin_routes(state: SharedState) -> Router<SharedState> {
+pub fn admin_routes(state: Arc<SharedState>) -> Router<Arc<SharedState>> {
     let pages = Router::new()
         .route("/", get(pages::index).post(pages::create))
         .route("/new", get(pages::new))

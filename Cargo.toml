@@ -7,16 +7,14 @@ resolver = "3"
 [dependencies]
 anyhow = "1.0.97"
 axum = { version = "0.8.2" }
-bson = { version = "2.13.0", features = ["chrono-0_4", "serde_with-3"] }
-chrono = { version = "0.4.40" }
+chrono = "0.4.40"
 comrak = { version = "0.36.0" }
 include_dir = { version = "0.7.4", features = ["glob"] }
-mongodb = { version = "3.2.1" }
 openidconnect = { version = "4.0.0", features = ["reqwest"] }
-serde = { version = "1.0.218" }
-serde_with = { version = "3.12.0" }
+serde = "1.0.218"
 tera = { version = "1.20.0", features = ["builtins"] }
-tokio = { version = "1.43.0", features = ["full"] }
+tokio = { version = "1.43.0", default-features = false, features = ["macros", "rt-multi-thread", "signal"] }
+tokio-postgres = { version = "0.7.13", features = ["with-chrono-0_4"] }
 tower-cookies = { version = "0.11.0", features = ["signed"] }
 tower-http = { version = "0.6.2", features = ["trace", "fs"] }
 tracing = { version = "0.1.41" }

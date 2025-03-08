@@ -1,37 +1,21 @@
 use super::types::PostForm;
 use crate::types::{AppError, Page, SharedState};
-use anyhow::Context;
-use axum::extract::Path;
+use anyhow::{Context, anyhow};
 use axum::{
     Form,
-    extract::State,
+    extract::{Path, State},
     response::{Html, Redirect},
 };
-use chrono::NaiveDate;
-use comrak::Options;
-use comrak::Plugins;
-use comrak::adapters::SyntaxHighlighterAdapter;
+use chrono::{NaiveDate, Utc};
 use comrak::markdown_to_html;
-use comrak::markdown_to_html_with_plugins;
-use mongodb::Collection;
-use mongodb::bson::doc;
-use mongodb::bson::oid::ObjectId;
+use comrak::{Options, Plugins};
+use comrak::{adapters::SyntaxHighlighterAdapter, markdown_to_html_with_plugins};
 use std::collections::HashMap;
 use std::io::{self, Write};
-use std::str::FromStr;
+use std::sync::Arc;
 
-pub async fn index(State(state): State<SharedState>) -> Result<Html<String>, AppError> {
-    let collection: Collection<Page> = state.mongo.database("blog").collection("pages");
-
-    let mut cursor = collection.find(doc! {}).await.context("database error")?;
-
-    let mut pages: Vec<Page> = Vec::new();
-
-    while cursor.advance().await.context("database error")? {
-        let mut page = cursor.deserialize_current().context("database error")?;
-        page.id = Some(page._id.to_hex());
-        pages.push(page)
-    }
+pub async fn index(State(state): State<Arc<SharedState>>) -> Result<Html<String>, AppError> {
+    let pages = Page::all(&state.client).await?;
 
     let mut context = tera::Context::new();
     context.insert("pages", &pages);
@@ -44,7 +28,7 @@ pub async fn index(State(state): State<SharedState>) -> Result<Html<String>, App
     Ok(Html(rendered))
 }
 
-pub async fn new(State(state): State<SharedState>) -> Result<Html<String>, AppError> {
+pub async fn new(State(state): State<Arc<SharedState>>) -> Result<Html<String>, AppError> {
     let rendered = state
         .tera
         .render("admin/new.html", &tera::Context::new())
@@ -54,23 +38,18 @@ pub async fn new(State(state): State<SharedState>) -> Result<Html<String>, AppEr
 }
 
 pub async fn edit(
-    State(state): State<SharedState>,
-    Path(id): Path<String>,
+    State(state): State<Arc<SharedState>>,
+    Path(id): Path<i32>,
 ) -> Result<Html<String>, AppError> {
     let tera = &state.tera;
-    let database: &mongodb::Database = &state.mongo.database("blog");
-    let mut context = tera::Context::new();
-    let oid = ObjectId::from_str(&id).context("invalid ID")?;
-
-    let collection: Collection<Page> = database.collection("pages");
-    let mut page = collection
-        .find_one(doc! {"_id": oid})
+    let client = &state.client;
+    let page: Page = client
+        .query_one("SELECT * FROM pages WHERE id = $1 LIMIT 1", &[&id])
         .await
-        .context("database error")?
-        .context("could not find page")?;
+        .context("could not find page")?
+        .try_into()?;
 
-    page.id = Some(page._id.to_string());
-
+    let mut context = tera::Context::new();
     context.insert("page", &page);
     let rendered = tera
         .render("admin/edit.html", &context)
@@ -80,16 +59,13 @@ pub async fn edit(
 }
 
 pub async fn create(
-    State(shared_state): State<SharedState>,
+    State(shared_state): State<Arc<SharedState>>,
     Form(form): Form<PostForm>,
 ) -> Result<Redirect, AppError> {
-    let collection = shared_state.mongo.database("blog").collection("pages");
-
     let new_page = Page {
-        _id: mongodb::bson::oid::ObjectId::new(),
         markdown: markdown_to_html(&form.content, &Options::default()),
         content: form.content,
-        created_at: mongodb::bson::DateTime::now(),
+        created_at: Utc::now(),
         description: form.description,
         id: None,
         preview: form.preview,
@@ -97,13 +73,25 @@ pub async fn create(
         revised_at: None,
         slug: form.slug,
         title: form.title,
-        updated_at: mongodb::bson::DateTime::now(),
+        updated_at: Utc::now(),
     };
 
-    let _result = collection
-        .insert_one(new_page)
-        .await
-        .context("could not create page")?;
+    let client = &shared_state.client;
+
+    client.execute(
+        "INSERT INTO pages (content, created_at, description, markdown, preview, slug, title, updated_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)", 
+        &[
+            &new_page.content,
+            &new_page.created_at,
+            &new_page.description,
+            &new_page.markdown,
+            &new_page.preview,
+            &new_page.slug,
+            &new_page.title,
+            &new_page.updated_at
+        ]
+    ).await.map_err(|e| anyhow!("could not create page: {}", e))?;
 
     Ok(Redirect::to("/admin/pages"))
 }
@@ -157,19 +145,16 @@ impl SyntaxHighlighterAdapter for SyntaxAdapter {
 }
 
 pub async fn update(
-    State(state): State<SharedState>,
-    Path(id): Path<String>,
+    State(state): State<Arc<SharedState>>,
+    Path(id): Path<i32>,
     Form(form): Form<PostForm>,
 ) -> Result<Redirect, AppError> {
-    let database: &mongodb::Database = &state.mongo.database("blog");
-    let collection: Collection<Page> = database.collection("pages");
-    let oid = ObjectId::from_str(&id).context("invalid ID")?;
-
-    let mut page = collection
-        .find_one(doc! {"_id": oid})
+    let client = &state.client;
+    let mut page: Page = client
+        .query_one("SELECT * FROM pages WHERE id = $1 LIMIT 1", &[&id])
         .await
-        .context("database error")?
-        .context("could not find page")?;
+        .context("could not find page")?
+        .try_into()?;
 
     if let Some(date) = form.published_at {
         if let Ok(date) = NaiveDate::parse_from_str(&date, "%Y-%m-%d") {
@@ -194,8 +179,27 @@ pub async fn update(
     page.description = form.description;
     page.title = form.title;
     page.preview = form.preview;
+    page.updated_at = Utc::now();
 
-    let _result = collection.replace_one(doc! {"_id": oid}, page).await;
+    client
+        .execute(
+            "UPDATE pages SET content = $1, description = $2, markdown = $3, preview = $4,
+        slug = $5, title = $6, updated_at = $7, published_at = $8, revised_at = $9 WHERE id = $10",
+            &[
+                &page.content,
+                &page.description,
+                &page.markdown,
+                &page.preview,
+                &page.slug,
+                &page.title,
+                &page.updated_at,
+                &page.published_at,
+                &page.revised_at,
+                &id,
+            ],
+        )
+        .await
+        .map_err(|e| anyhow!("could not create page: {}", e))?;
 
     Ok(Redirect::to("/admin/pages"))
 }

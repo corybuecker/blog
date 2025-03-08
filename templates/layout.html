@@ -6,17 +6,17 @@
               content="width=device-width,minimum-scale=1,initial-scale=1" />
         <link rel="me" href="https://github.com/corybuecker">
         <link rel="icon"
-              type="image/svg+xml"
-              href="{{ digest_asset(file="favicon.svg") }}"
-              color="#ff8a01">
-        <link rel="mask-icon"
-              href="{{ digest_asset(file="favicon.svg") }}"
-              color="#ff8a01">
+              href="{{ digest_asset(file="/favicon.ico") | safe }}"
+              sizes="48x48" />
+        <link rel="icon"
+              href="{{ digest_asset(file="/favicon.svg") | safe }}"
+              sizes="any"
+              type="image/svg+xml" />
         {% if description %}
             <meta name="description" content="{{ description }}" />
             <title>{{ title }}</title>
         {% endif %}
-        <link rel="stylesheet" href="{{ digest_asset(file="app.css") }}">
+        <link rel="stylesheet" href="{{ digest_asset(file="app.css") | safe }}">
     </head>
     <body class="@container">
         <div class="prose mx-auto px-2 @2xl:px-0">
@@ -57,7 +57,7 @@
                 {% endblock content %}
             </main>
         </div>
-        <script type="module" src="{{ digest_asset(file="app.js") }}"></script>
+        <script type="module" src="{{ digest_asset(file="app.js") | safe }}"></script>
         <link rel="stylesheet"
               href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/dark.min.css">
         <script type="module">
