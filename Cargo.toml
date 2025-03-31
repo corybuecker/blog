@@ -8,7 +8,7 @@ resolver = "3"
 anyhow = "1.0.97"
 axum = { version = "0.8.2" }
 chrono = "0.4.40"
-comrak = { version = "0.36.0" }
+comrak = { version = "0.37.0" }
 include_dir = { version = "0.7.4", features = ["glob"] }
 openidconnect = { version = "4.0.0", features = ["reqwest"] }
 serde = "1.0.219"
