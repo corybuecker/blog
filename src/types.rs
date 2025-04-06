@@ -6,6 +6,7 @@ use tera::Tera;
 use tokio_postgres::{Client, Row};
 use tracing::error;
 
+#[derive(Debug)]
 pub struct AppError(anyhow::Error);
 
 impl From<anyhow::Error> for AppError {

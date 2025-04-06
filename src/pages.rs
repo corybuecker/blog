@@ -30,7 +30,7 @@ pub async fn build_response(
     context.insert("description", &page.description);
     let mut title = page.title.to_owned();
     title.push_str(" - Cory Buecker");
-    context.insert("title", &());
+    context.insert("title", &title);
 
     let rendered = tera
         .render("pages/page.html", &context)
@@ -44,4 +44,54 @@ pub async fn remove_slash(Path(path_slug): Path<String>) -> Redirect {
     redirect.push_str(&path_slug);
 
     Redirect::permanent(&redirect)
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::utils::tests::helpers::{cleanup_test_data, create_test_shared_state, random_slug, setup_test_data};
+    use chrono::Utc;
+
+    #[tokio::test]
+    async fn test_build_response_happy_path() -> anyhow::Result<()> {
+        // Create a test shared state
+        let shared_state = create_test_shared_state().await?;
+        
+        // Set up test data
+        setup_test_data(&shared_state.client).await?;
+        
+        // Insert a test page
+        let now = Utc::now();
+        let test_slug = random_slug("homepage");
+        shared_state.client.execute(
+            "INSERT INTO pages (title, slug, content, markdown, description, preview, created_at, updated_at, published_at) 
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
+            &[
+                &"Test Page", 
+                &test_slug, 
+                &"<p>Test content</p>", 
+                &"Test content", 
+                &"Test description", 
+                &"Test preview", 
+                &now, 
+                &now, 
+                &now
+            ]
+        ).await?;
+        
+        // Call the function under test
+        let result = build_response(Path(test_slug.to_string()), State(shared_state.clone())).await.unwrap();
+        
+        // Verify the result
+        let html = result.0;
+        assert!(html.contains("Test Page"));
+        assert!(html.contains("Test content"));
+        assert!(html.contains("Test Page - Cory Buecker")); // Check title format
+        
+        // Clean up test data
+        cleanup_test_data(&shared_state.client).await?;
+        
+        Ok(())
+    }
 }
