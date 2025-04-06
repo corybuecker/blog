@@ -4,4 +4,4 @@ metadata:
   name: blog
   labels:
     name: blog
-    pod-security.kubernetes.io/warn: restricted
+    pod-security.kubernetes.io/enforce: restricted

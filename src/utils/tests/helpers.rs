@@ -3,7 +3,7 @@ use crate::{
     utils::tera::{digest_asset, embed_templates},
 };
 use anyhow::Result;
-use rand::{Rng, distributions::Alphanumeric};
+use rand::{distr::Alphanumeric, Rng};
 use std::iter;
 use std::sync::Arc;
 use tera::Tera;
@@ -19,7 +19,7 @@ pub fn random_slug(prefix: &str) -> String {
 // Generate a random string of specified length
 #[allow(dead_code)]
 fn random_string(length: usize) -> String {
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     iter::repeat_with(|| rng.sample(Alphanumeric))
         .map(char::from)
         .take(length)
