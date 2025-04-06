@@ -1,12 +1,13 @@
 use crate::types::{AppError, Page, SharedState};
-use anyhow::Context;
-use axum::{body::Body, extract::State};
+use anyhow::{Context, anyhow};
+use axum::http::{StatusCode, header};
+use axum::{body::Body, extract::State, http::HeaderValue, response::IntoResponse};
 use std::sync::Arc;
 use xml_builder::{XMLBuilder, XMLElement, XMLVersion};
 
 pub async fn build_response(
     State(shared_state): State<Arc<SharedState>>,
-) -> Result<Body, AppError> {
+) -> Result<impl IntoResponse, AppError> {
     let client = &shared_state.client;
 
     let pages = Page::published(client).await?;
@@ -21,36 +22,57 @@ pub async fn build_response(
 
     for (current_index, page) in pages.into_iter().enumerate() {
         let mut url = XMLElement::new("url");
+        let mut loc = XMLElement::new("loc");
+
+        // First page is treated as the homepage
         if current_index == 0 {
-            let mut loc = XMLElement::new("loc");
-            let _ = loc.add_text("https://corybuecker.com".to_string());
-            let _ = url.add_child(loc);
+            loc.add_text("https://corybuecker.com".to_string())
+                .map_err(|e| anyhow!("Failed to add homepage URL: {}", e))?;
         } else {
-            let mut loc = XMLElement::new("loc");
-            let _ = loc.add_text(format!("https://corybuecker.com/post/{}", page.slug));
-            let _ = url.add_child(loc);
+            loc.add_text(format!("https://corybuecker.com/post/{}", page.slug))
+                .map_err(|e| anyhow!("Failed to add page URL: {}", e))?;
         }
 
-        let lastmodts = page
+        url.add_child(loc)
+            .map_err(|e| anyhow!("Failed to add location to URL: {}", e))?;
+
+        // Use the most recent timestamp available
+        let last_modified = page
             .revised_at
             .or(page.published_at)
-            .or(Some(page.created_at));
+            .unwrap_or(page.created_at);
 
-        if let Some(lastmodts) = lastmodts {
-            let mut lastmod = XMLElement::new("lastmod");
-            let _ = lastmod.add_text(lastmodts.to_rfc3339());
-            let _ = url.add_child(lastmod);
-        }
+        let mut lastmod = XMLElement::new("lastmod");
+        lastmod
+            .add_text(last_modified.to_rfc3339())
+            .map_err(|e| anyhow!("Failed to add lastmod text: {}", e))?;
 
-        let _ = urlset.add_child(url);
+        url.add_child(lastmod)
+            .map_err(|e| anyhow!("Failed to add lastmod to URL: {}", e))?;
+
+        urlset
+            .add_child(url)
+            .map_err(|e| anyhow!("Failed to add URL to urlset: {}", e))?;
     }
 
     xml.set_root_element(urlset);
 
     let mut output = Vec::<u8>::new();
-    let _ = xml.generate(&mut output);
+    xml.generate(&mut output)
+        .map_err(|e| anyhow!("Failed to generate XML: {}", e))?;
 
-    Ok(Body::from(
-        String::from_utf8(output).context("could not render XML")?,
-    ))
+    let xml_string = String::from_utf8(output).context("could not render XML")?;
+
+    // Create a response with the correct content type
+    let response = (
+        StatusCode::OK,
+        [(
+            header::CONTENT_TYPE,
+            HeaderValue::from_static("application/xml"),
+        )],
+        Body::from(xml_string),
+    )
+        .into_response();
+
+    Ok(response)
 }
