@@ -19,7 +19,7 @@ RUN npm install
 RUN npx tailwindcss -i css/app.css -o app.css
 RUN npx esbuild --bundle js/app.ts --format=esm > app.js
 
-FROM debian@sha256:1209d8fd77def86ceb6663deef7956481cc6c14a25e1e64daec12c0ceffcc19d
+FROM debian@sha256:18023f131f52fc3ea21973cabffe0b216c60b417fd2478e94d9d59981ebba6af
 RUN mkdir -p /opt/blog
 WORKDIR /opt/blog
 COPY --from=backend_builder /build/blog /opt/blog/
