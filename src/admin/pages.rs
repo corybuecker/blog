@@ -18,20 +18,22 @@ pub async fn index(State(state): State<Arc<SharedState>>) -> Result<Html<String>
     let pages = Page::all(&state.client).await?;
 
     let mut context = tera::Context::new();
+    context.insert("title", "Admin");
     context.insert("pages", &pages);
 
     let rendered = state
         .tera
-        .render("admin/index.html", &context)
-        .context("could not render template")?;
+        .render("admin/index.html", &context).map_err(|e| anyhow!("{}", e))?;
 
     Ok(Html(rendered))
 }
 
 pub async fn new(State(state): State<Arc<SharedState>>) -> Result<Html<String>, AppError> {
+    let mut context = tera::Context::new();
+    context.insert("title", "Admin");
     let rendered = state
         .tera
-        .render("admin/new.html", &tera::Context::new())
+        .render("admin/new.html", &context)
         .context("could not render template")?;
 
     Ok(Html(rendered))
@@ -50,6 +52,7 @@ pub async fn edit(
         .try_into()?;
 
     let mut context = tera::Context::new();
+    context.insert("title", "Admin");
     context.insert("page", &page);
     let rendered = tera
         .render("admin/edit.html", &context)
