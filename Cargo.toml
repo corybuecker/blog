@@ -5,7 +5,7 @@ edition = "2024"
 resolver = "3"
 
 [dependencies]
-anyhow = { version = "1.0.97" }
+anyhow = { version = "1.0.98" }
 axum = { version = "0.8.3" }
 chrono = { version = "0.4.40" }
 comrak = { version = "0.38.0" }
