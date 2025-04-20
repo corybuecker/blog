@@ -8,7 +8,7 @@ use axum::{
 use opentelemetry::{KeyValue, global};
 use std::sync::Arc;
 use tera::Tera;
-use tokio::signal::unix::SignalKind;
+use tokio::{signal::unix::SignalKind, spawn};
 use tokio_postgres::{NoTls, connect};
 use tower_http::{services::ServeDir, trace::TraceLayer};
 use tracing::info;
@@ -49,7 +49,11 @@ async fn main() -> anyhow::Result<()> {
     let database_url = std::env::var("DATABASE_URL")?;
     let (client, connection) = connect(&database_url, NoTls).await?;
 
-    tokio::spawn(connection);
+    spawn(async move {
+        if let Err(e) = connection.await {
+            panic!("Postgres connection error: {}", e);
+        }
+    });
 
     let shared_state = Arc::new(SharedState { tera, client });
     let app = Router::new()
