@@ -77,39 +77,10 @@ CREATE TABLE public.users (
 ALTER TABLE public.users OWNER TO blog;
 
 --
--- Name: users_id_seq; Type: SEQUENCE; Schema: public; Owner: blog
---
-
-CREATE SEQUENCE public.users_id_seq
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
-ALTER SEQUENCE public.users_id_seq OWNER TO blog;
-
---
--- Name: users_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: blog
---
-
-ALTER SEQUENCE public.users_id_seq OWNED BY public.users.id;
-
-
---
 -- Name: pages id; Type: DEFAULT; Schema: public; Owner: blog
 --
 
 ALTER TABLE ONLY public.pages ALTER COLUMN id SET DEFAULT nextval('public.pages_id_seq'::regclass);
-
-
---
--- Name: users id; Type: DEFAULT; Schema: public; Owner: blog
---
-
-ALTER TABLE ONLY public.users ALTER COLUMN id SET DEFAULT nextval('public.users_id_seq'::regclass);
 
 
 --
@@ -121,11 +92,10 @@ ALTER TABLE ONLY public.pages
 
 
 --
--- Name: users users_pkey; Type: CONSTRAINT; Schema: public; Owner: blog
+-- Name: pages_slug_idx; Type: INDEX; Schema: public; Owner: blog
 --
 
-ALTER TABLE ONLY public.users
-    ADD CONSTRAINT users_pkey PRIMARY KEY (id);
+CREATE UNIQUE INDEX pages_slug_idx ON public.pages USING btree (slug);
 
 
 --

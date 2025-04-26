@@ -60,7 +60,7 @@ pub async fn build_response(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::utils::tests::helpers::{cleanup_test_data, create_test_shared_state, random_slug, setup_test_data};
+    use crate::utilities::tests::helpers::{cleanup_test_data, create_test_shared_state, random_slug, setup_test_data};
     use chrono::{Days, Utc};
     
 

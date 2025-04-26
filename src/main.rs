@@ -6,14 +6,14 @@ use axum::{
     routing::get,
 };
 use opentelemetry::{KeyValue, global};
-use std::sync::Arc;
+use std::{process::exit, sync::Arc};
 use tera::Tera;
 use tokio::{signal::unix::SignalKind, spawn};
 use tokio_postgres::{NoTls, connect};
 use tower_http::{services::ServeDir, trace::TraceLayer};
 use tracing::info;
 use types::SharedState;
-use utils::{
+use utilities::{
     initialize_tracing,
     tera::{digest_asset, embed_templates},
 };
@@ -21,7 +21,7 @@ use utils::{
 mod admin;
 mod pages;
 mod types;
-mod utils;
+mod utilities;
 
 async fn metrics(request: Request, next: Next) -> impl IntoResponse {
     let start = std::time::Instant::now();
@@ -51,7 +51,8 @@ async fn main() -> anyhow::Result<()> {
 
     spawn(async move {
         if let Err(e) = connection.await {
-            panic!("Postgres connection error: {}", e);
+            tracing::error!("Postgres connection error: {}", e);
+            exit(1);
         }
     });
 

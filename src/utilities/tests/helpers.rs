@@ -1,9 +1,9 @@
 use crate::{
     types::SharedState,
-    utils::tera::{digest_asset, embed_templates},
+    utilities::tera::{digest_asset, embed_templates},
 };
 use anyhow::Result;
-use rand::{distr::Alphanumeric, Rng};
+use rand::{Rng, distr::Alphanumeric};
 use std::iter;
 use std::sync::Arc;
 use tera::Tera;
