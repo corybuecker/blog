@@ -50,7 +50,7 @@ pub async fn remove_slash(Path(path_slug): Path<String>) -> Redirect {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::utils::tests::helpers::{cleanup_test_data, create_test_shared_state, random_slug, setup_test_data};
+    use crate::utilities::tests::helpers::{cleanup_test_data, create_test_shared_state, random_slug, setup_test_data};
     use chrono::Utc;
 
     #[tokio::test]
