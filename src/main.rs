@@ -5,7 +5,6 @@ use axum::{
     response::IntoResponse,
     routing::get,
 };
-use opentelemetry::{KeyValue, global};
 use std::{process::exit, sync::Arc};
 use tera::Tera;
 use tokio::{signal::unix::SignalKind, spawn};
@@ -26,28 +25,33 @@ mod utilities;
 async fn metrics(request: Request, next: Next) -> impl IntoResponse {
     let start = std::time::Instant::now();
     let path = request.uri().to_string();
+    let method = request.method().to_string();
 
     let response = next.run(request).await;
 
-    let meter = global::meter("blog");
-    meter.f64_counter("latency").build().add(
-        start.elapsed().as_secs_f64(),
-        &[KeyValue::new("path", path)],
-    );
+    if response.status().is_success() {
+        info!(
+            histogram.latency = start.elapsed().as_millis() as f64,
+            method = method,
+            path = path,
+        );
+    }
 
     response
 }
 
 #[tokio::main]
-async fn main() -> anyhow::Result<()> {
-    let metric_provider = initialize_tracing()?;
+async fn main() {
+    let providers = initialize_tracing().expect("could not initialize logging/tracing");
     let mut tera = Tera::default();
 
     tera.register_function("digest_asset", digest_asset());
-    embed_templates(&mut tera).map_err(|e| anyhow::anyhow!("Failed to embed templates: {}", e))?;
+    embed_templates(&mut tera)
+        .map_err(|e| anyhow::anyhow!("Failed to embed templates: {}", e))
+        .unwrap();
 
-    let database_url = std::env::var("DATABASE_URL")?;
-    let (client, connection) = connect(&database_url, NoTls).await?;
+    let database_url = std::env::var("DATABASE_URL").unwrap();
+    let (client, connection) = connect(&database_url, NoTls).await.unwrap();
 
     spawn(async move {
         if let Err(e) = connection.await {
@@ -73,15 +77,23 @@ async fn main() -> anyhow::Result<()> {
         let mut signal = tokio::signal::unix::signal(SignalKind::terminate())
             .expect("failed to install SIGTERM handler");
         signal.recv().await;
-        metric_provider.shutdown().unwrap();
-        info!("Received shutdown signal, gracefully shutting down");
+
+        for provider in providers {
+            match provider {
+                utilities::Provider::MeterProvider(provider) => {
+                    provider.shutdown().unwrap();
+                }
+                utilities::Provider::TracerProvider(tracer_provider) => {
+                    tracer_provider.shutdown().unwrap();
+                }
+            }
+        }
     };
 
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:8000").await?;
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:8000").await.unwrap();
 
     axum::serve(listener, app)
         .with_graceful_shutdown(shutdown_signal)
-        .await?;
-
-    Ok(())
+        .await
+        .expect("failed to start server");
 }

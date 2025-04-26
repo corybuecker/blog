@@ -23,7 +23,8 @@ pub async fn index(State(state): State<Arc<SharedState>>) -> Result<Html<String>
 
     let rendered = state
         .tera
-        .render("admin/index.html", &context).map_err(|e| anyhow!("{}", e))?;
+        .render("admin/index.html", &context)
+        .map_err(|e| anyhow!("{}", e))?;
 
     Ok(Html(rendered))
 }
