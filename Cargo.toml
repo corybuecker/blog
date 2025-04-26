@@ -21,6 +21,7 @@ tokio = { version = "1.44.2", default-features = false, features = ["macros", "r
 tokio-postgres = { version = "0.7.13", features = ["with-chrono-0_4"] }
 tower-cookies = { version = "0.11.0", features = ["signed"] }
 tower-http = { version = "0.6.2", features = ["trace", "fs"] }
-tracing = { version = "0.1.41" }
-tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
+tracing = "0.1"
+tracing-opentelemetry = "0.30.0"
+tracing-subscriber = "0.3"
 xml-builder = { version = "0.5" }
