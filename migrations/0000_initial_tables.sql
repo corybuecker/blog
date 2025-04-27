@@ -13,6 +13,6 @@ create table pages (
 );
 
 create table users (
-    id integer not null,
+    id serial primary key not null,
     email text not null
 );

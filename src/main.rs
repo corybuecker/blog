@@ -5,9 +5,9 @@ use axum::{
     response::IntoResponse,
     routing::get,
 };
-use std::{process::exit, sync::Arc};
+use std::{sync::Arc, time::Duration};
 use tera::Tera;
-use tokio::{signal::unix::SignalKind, spawn};
+use tokio::{select, signal::unix::SignalKind, sync::RwLock, time::sleep};
 use tokio_postgres::{NoTls, connect};
 use tower_http::{services::ServeDir, trace::TraceLayer};
 use tracing::info;
@@ -21,6 +21,71 @@ mod admin;
 mod pages;
 mod types;
 mod utilities;
+
+async fn database_connection_handler(state: Arc<SharedState>) {
+    let database_url = std::env::var("DATABASE_URL").unwrap();
+
+    loop {
+        let (client, connection) = match connect(&database_url, NoTls).await {
+            Ok((client, connection)) => {
+                info!("Connected to database");
+                (client, connection)
+            }
+            Err(e) => {
+                tracing::error!("Failed to connect to database: {}", e);
+                sleep(Duration::from_secs(5)).await;
+                continue;
+            }
+        };
+
+        let mut guard = state.client.write().await;
+        *guard = client;
+        drop(guard);
+
+        if let Err(e) = connection.await {
+            tracing::error!("Connection error: {}", e);
+            continue;
+        }
+    }
+}
+
+async fn shutdown_handler(providers: Vec<utilities::Provider>) {
+    let mut signal = tokio::signal::unix::signal(SignalKind::terminate())
+        .expect("failed to install SIGTERM handler");
+
+    signal.recv().await;
+
+    for provider in providers {
+        match provider {
+            utilities::Provider::MeterProvider(provider) => {
+                provider.shutdown().unwrap();
+            }
+            utilities::Provider::TracerProvider(tracer_provider) => {
+                tracer_provider.shutdown().unwrap();
+            }
+        }
+    }
+}
+
+async fn server_handler(state: Arc<SharedState>) {
+    let app = Router::new()
+        .route("/", get(pages::home::build_response))
+        .route("/post/{slug}/", get(pages::remove_slash))
+        .route("/post/{slug}", get(pages::build_response))
+        .route("/sitemap.xml", get(pages::sitemap::build_response))
+        .nest_service("/assets", ServeDir::new("static"))
+        .nest_service("/images", ServeDir::new("static/images"))
+        .nest("/admin", admin::admin_routes(state.clone()))
+        .with_state(state.clone())
+        .layer(TraceLayer::new_for_http())
+        .layer(from_fn(metrics));
+
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:8000").await.unwrap();
+
+    axum::serve(listener, app)
+        .await
+        .expect("failed to start server");
+}
 
 async fn metrics(request: Request, next: Next) -> impl IntoResponse {
     let start = std::time::Instant::now();
@@ -51,49 +116,16 @@ async fn main() {
         .unwrap();
 
     let database_url = std::env::var("DATABASE_URL").unwrap();
-    let (client, connection) = connect(&database_url, NoTls).await.unwrap();
+    let (client, _) = connect(&database_url, NoTls).await.unwrap();
 
-    spawn(async move {
-        if let Err(e) = connection.await {
-            tracing::error!("Postgres connection error: {}", e);
-            exit(1);
-        }
+    let shared_state = Arc::new(SharedState {
+        tera,
+        client: RwLock::new(client),
     });
 
-    let shared_state = Arc::new(SharedState { tera, client });
-    let app = Router::new()
-        .route("/", get(pages::home::build_response))
-        .route("/post/{slug}/", get(pages::remove_slash))
-        .route("/post/{slug}", get(pages::build_response))
-        .route("/sitemap.xml", get(pages::sitemap::build_response))
-        .nest_service("/assets", ServeDir::new("static"))
-        .nest_service("/images", ServeDir::new("static/images"))
-        .nest("/admin", admin::admin_routes(shared_state.clone()))
-        .with_state(shared_state)
-        .layer(TraceLayer::new_for_http())
-        .layer(from_fn(metrics));
-
-    let shutdown_signal = async move {
-        let mut signal = tokio::signal::unix::signal(SignalKind::terminate())
-            .expect("failed to install SIGTERM handler");
-        signal.recv().await;
-
-        for provider in providers {
-            match provider {
-                utilities::Provider::MeterProvider(provider) => {
-                    provider.shutdown().unwrap();
-                }
-                utilities::Provider::TracerProvider(tracer_provider) => {
-                    tracer_provider.shutdown().unwrap();
-                }
-            }
-        }
-    };
-
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:8000").await.unwrap();
-
-    axum::serve(listener, app)
-        .with_graceful_shutdown(shutdown_signal)
-        .await
-        .expect("failed to start server");
+    select! {
+        _ = shutdown_handler(providers) => {}
+        _ = server_handler(shared_state.clone()) => {}
+        _ = database_connection_handler(shared_state.clone()) => {}
+    }
 }

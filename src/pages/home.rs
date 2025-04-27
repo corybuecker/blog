@@ -14,7 +14,7 @@ pub async fn build_response(
     State(shared_state): State<Arc<SharedState>>,
 ) -> Result<Html<String>, AppError> {
     let tera = &shared_state.tera;
-    let client = &shared_state.client;
+    let client = shared_state.client.read().await;
     let pages = client
         .query(
             "SELECT title, slug FROM pages WHERE published_at IS NOT NULL ORDER BY published_at DESC",
@@ -71,13 +71,13 @@ mod tests {
         let shared_state = create_test_shared_state().await?;
 
         // Set up test data
-        setup_test_data(&shared_state.client).await?;
+        setup_test_data(&*shared_state.client.read().await).await?;
 
         // Insert a test page that will be used as the homepage
         let now = Utc::now();
         let day_ago = Utc::now().checked_sub_days(Days::new(1)).unwrap();
 
-        shared_state.client.execute(
+        shared_state.client.read().await.execute(
             "INSERT INTO pages (title, slug, content, markdown, description, preview, created_at, updated_at, published_at) 
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
             &[
@@ -94,7 +94,7 @@ mod tests {
         ).await?;
 
         // Insert another test page that will be in the pages list
-        shared_state.client.execute(
+        shared_state.client.read().await.execute(
             "INSERT INTO pages (title, slug, content, markdown, description, preview, created_at, updated_at, published_at) 
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
             &[
@@ -119,7 +119,7 @@ mod tests {
         assert!(html.contains("Test Page"));
 
         // Clean up test data
-        cleanup_test_data(&shared_state.client).await?;
+        cleanup_test_data(&*shared_state.client.read().await).await?;
 
         Ok(())
     }

@@ -3,6 +3,7 @@ use axum::{http::StatusCode, response::IntoResponse};
 use chrono::{DateTime, Utc};
 use serde::Serialize;
 use tera::Tera;
+use tokio::sync::RwLock;
 use tokio_postgres::{Client, Row};
 use tracing::error;
 
@@ -28,7 +29,7 @@ impl IntoResponse for AppError {
 
 pub struct SharedState {
     pub tera: Tera,
-    pub client: Client,
+    pub client: RwLock<Client>,
 }
 
 #[derive(Debug, Serialize)]

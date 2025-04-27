@@ -26,7 +26,7 @@ async fn require_authentication(
 
     if email.is_some() {
         let email = email.unwrap().value().to_owned();
-        let client = &state.client;
+        let client = state.client.read().await;
         let result = client
             .query_one(
                 "SELECT true AS exists FROM users WHERE email = $1 LIMIT 1",
