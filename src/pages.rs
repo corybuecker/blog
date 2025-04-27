@@ -58,9 +58,10 @@ mod tests {
     async fn test_build_response_happy_path() -> anyhow::Result<()> {
         // Create a test shared state
         let shared_state = create_test_shared_state().await?;
+        let client = shared_state.client.read().await;
 
         // Set up test data
-        setup_test_data(&*shared_state.client.read().await).await?;
+        setup_test_data(&client).await?;
 
         // Insert a test page
         let now = Utc::now();
@@ -93,7 +94,7 @@ mod tests {
         assert!(html.contains("Test Page - Cory Buecker")); // Check title format
 
         // Clean up test data
-        cleanup_test_data(&*shared_state.client.read().await).await?;
+        cleanup_test_data(&client).await?;
 
         Ok(())
     }
