@@ -7,6 +7,7 @@ use rand::{Rng, distr::Alphanumeric};
 use std::iter;
 use std::sync::Arc;
 use tera::Tera;
+use tokio::sync::RwLock;
 use tokio_postgres::{Client, NoTls, Socket, connect, tls::NoTlsStream};
 
 // Generate a random slug (lowercase with hyphens)
@@ -83,7 +84,10 @@ pub async fn create_test_shared_state() -> Result<Arc<SharedState>> {
     tera.register_function("digest_asset", digest_asset());
     embed_templates(&mut tera)?;
 
-    Ok(Arc::new(SharedState { tera, client }))
+    Ok(Arc::new(SharedState {
+        tera,
+        client: RwLock::new(client),
+    }))
 }
 
 /// Cleans up test data from the database.

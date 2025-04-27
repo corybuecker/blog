@@ -15,7 +15,8 @@ use std::io::{self, Write};
 use std::sync::Arc;
 
 pub async fn index(State(state): State<Arc<SharedState>>) -> Result<Html<String>, AppError> {
-    let pages = Page::all(&state.client).await?;
+    let client = state.client.read().await;
+    let pages = Page::all(&client).await?;
 
     let mut context = tera::Context::new();
     context.insert("title", "Admin");
@@ -45,7 +46,7 @@ pub async fn edit(
     Path(id): Path<i32>,
 ) -> Result<Html<String>, AppError> {
     let tera = &state.tera;
-    let client = &state.client;
+    let client = state.client.read().await;
     let page: Page = client
         .query_one("SELECT * FROM pages WHERE id = $1 LIMIT 1", &[&id])
         .await
@@ -63,7 +64,7 @@ pub async fn edit(
 }
 
 pub async fn create(
-    State(shared_state): State<Arc<SharedState>>,
+    State(state): State<Arc<SharedState>>,
     Form(form): Form<PostForm>,
 ) -> Result<Redirect, AppError> {
     let new_page = Page {
@@ -80,7 +81,7 @@ pub async fn create(
         updated_at: Utc::now(),
     };
 
-    let client = &shared_state.client;
+    let client = state.client.read().await;
 
     client.execute(
         "INSERT INTO pages (content, created_at, description, markdown, preview, slug, title, updated_at)
@@ -153,7 +154,8 @@ pub async fn update(
     Path(id): Path<i32>,
     Form(form): Form<PostForm>,
 ) -> Result<Redirect, AppError> {
-    let client = &state.client;
+    let client = state.client.read().await;
+
     let mut page: Page = client
         .query_one("SELECT * FROM pages WHERE id = $1 LIMIT 1", &[&id])
         .await

@@ -15,7 +15,7 @@ pub async fn build_response(
 ) -> Result<Html<String>, AppError> {
     let tera = &shared_state.tera;
     let mut context = tera::Context::new();
-    let client = &shared_state.client;
+    let client = shared_state.client.read().await;
 
     let page: Page = client
         .query_one(
@@ -60,12 +60,12 @@ mod tests {
         let shared_state = create_test_shared_state().await?;
 
         // Set up test data
-        setup_test_data(&shared_state.client).await?;
+        setup_test_data(&*shared_state.client.read().await).await?;
 
         // Insert a test page
         let now = Utc::now();
         let test_slug = random_slug("homepage");
-        shared_state.client.execute(
+        shared_state.client.read().await.execute(
             "INSERT INTO pages (title, slug, content, markdown, description, preview, created_at, updated_at, published_at) 
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
             &[
@@ -93,7 +93,7 @@ mod tests {
         assert!(html.contains("Test Page - Cory Buecker")); // Check title format
 
         // Clean up test data
-        cleanup_test_data(&shared_state.client).await?;
+        cleanup_test_data(&*shared_state.client.read().await).await?;
 
         Ok(())
     }

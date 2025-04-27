@@ -8,9 +8,9 @@ use xml_builder::{XMLBuilder, XMLElement, XMLVersion};
 pub async fn build_response(
     State(shared_state): State<Arc<SharedState>>,
 ) -> Result<impl IntoResponse, AppError> {
-    let client = &shared_state.client;
+    let client = shared_state.client.read().await;
 
-    let pages = Page::published(client).await?;
+    let pages = Page::published(&client).await?;
 
     let mut xml = XMLBuilder::new()
         .version(XMLVersion::XML1_1)
