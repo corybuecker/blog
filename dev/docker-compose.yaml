@@ -26,14 +26,3 @@ services:
     image: grafana/grafana@sha256:52c3e20686b860c6dc1f623811565773cf51eefa378817a4896dfc863c3c82c8 # 11.6.1
     ports:
       - 3000:3000
-  exlytics:
-    image: ghcr.io/corybuecker/exlytics@sha256:cdb8507b23f63970b985be4fbf1ae5c1020215c6e80b06d8f9685b1e1b1f4d05 # 1.0.0
-    ports:
-      - 8001:8001
-    environment:
-      - DATABASE_URL=postgres://blog@postgres:5432/exlytics
-      - METRICS_ENDPOINT=http://prometheus:9090/api/v1/otlp/v1/metrics
-      - OTEL_METRIC_EXPORT_INTERVAL=10000
-      - TRACING_ENDPOINT=http://jaeger:4318/v1/traces
-    depends_on:
-      - postgres
