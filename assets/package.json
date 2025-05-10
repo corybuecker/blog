@@ -12,7 +12,10 @@
     "css": "npx tailwindcss --cwd ../ -i assets/css/app.css -o static/app.css",
     "css:watch": "npx tailwindcss --cwd ../ -i assets/css/app.css -o static/app.css --watch",
     "js": "rm -f ../static/app.js && npx esbuild --bundle js/app.ts --format=esm > ../static/app.js",
-    "js:watch": "rm -f ../static/app.js && npx esbuild --bundle js/app.ts --format=esm --watch > ../static/app.js"
+    "js:watch": "nodemon --watch js/app.ts --exec 'npm run js'"
   },
-  "type": "module"
+  "type": "module",
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
 }
