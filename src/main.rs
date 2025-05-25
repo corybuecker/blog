@@ -5,6 +5,7 @@ use axum::{
     response::IntoResponse,
     routing::get,
 };
+use rust_web_common::telemetry::TelemetryBuilder;
 use std::{sync::Arc, time::Duration};
 use tera::Tera;
 use tokio::{select, signal::unix::SignalKind, sync::RwLock, time::sleep};
@@ -12,10 +13,7 @@ use tokio_postgres::{NoTls, connect};
 use tower_http::{services::ServeDir, trace::TraceLayer};
 use tracing::info;
 use types::SharedState;
-use utilities::{
-    initialize_tracing,
-    tera::{digest_asset, embed_templates},
-};
+use utilities::tera::{digest_asset, embed_templates};
 
 mod admin;
 mod pages;
@@ -49,22 +47,11 @@ async fn database_connection_handler(state: Arc<SharedState>) {
     }
 }
 
-async fn shutdown_handler(providers: Vec<utilities::Provider>) {
+async fn shutdown_handler() {
     let mut signal = tokio::signal::unix::signal(SignalKind::terminate())
         .expect("failed to install SIGTERM handler");
 
     signal.recv().await;
-
-    for provider in providers {
-        match provider {
-            utilities::Provider::MeterProvider(provider) => {
-                provider.shutdown().unwrap();
-            }
-            utilities::Provider::TracerProvider(tracer_provider) => {
-                tracer_provider.shutdown().unwrap();
-            }
-        }
-    }
 }
 
 async fn server_handler(state: Arc<SharedState>) {
@@ -107,7 +94,9 @@ async fn metrics(request: Request, next: Next) -> impl IntoResponse {
 
 #[tokio::main]
 async fn main() {
-    let providers = initialize_tracing().expect("could not initialize logging/tracing");
+    let _telemetry_providers = TelemetryBuilder::new("blog".to_string())
+        .build()
+        .expect("failed to initialize telemetry");
     let mut tera = Tera::default();
 
     tera.register_function("digest_asset", digest_asset());
@@ -124,7 +113,7 @@ async fn main() {
     });
 
     select! {
-        _ = shutdown_handler(providers) => {}
+        _ = shutdown_handler() => {}
         _ = server_handler(shared_state.clone()) => {}
         _ = database_connection_handler(shared_state.clone()) => {}
     }
