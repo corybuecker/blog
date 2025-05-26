@@ -10,7 +10,7 @@ COPY templates /build/templates
 RUN cargo build --release
 RUN cp /build/target/release/blog /build/blog
 
-FROM node@sha256:37c7b4cd8867313fc17ba76c1a6676414c61e2aac113694072bb8e3ef6d0a4c8 AS frontend_builder
+FROM node@sha256:85150f7c8d9cf5e830f21d34ea52cf0c8d1d0317e8ff1ad73a5b76cca888aa49 AS frontend_builder
 RUN mkdir -p /static
 COPY assets /assets
 COPY templates /assets/templates
