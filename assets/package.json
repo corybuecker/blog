@@ -1,19 +1,21 @@
 {
   "dependencies": {
+    "@corybuecker/analytics-collector": "^0.0.7-dev"
+  },
+  "devDependencies": {
     "@tailwindcss/cli": "^4.1.7",
     "@tailwindcss/forms": "^0.5.10",
     "@tailwindcss/typography": "^0.5.16",
     "esbuild": "^0.25.4",
+    "nodemon": "^3.1.10",
     "tailwindcss": "^4.1.7",
-    "typescript": "^5.8.3",
-    "nodemon": "^3.1.10"
+    "typescript": "^5.8.3"
   },
   "scripts": {
-    "start": "npm run css & npm run js",
     "css": "npx tailwindcss --cwd ../ -i assets/css/app.css -o static/app.css",
-    "css:watch": "npx tailwindcss --cwd ../ -i assets/css/app.css -o static/app.css --watch",
+    "css:watch": "nodemon --watch css --watch ../templates -e css,html --exec 'npm run css'",
     "js": "rm -f ../static/app.js && npx esbuild --bundle js/app.ts --format=esm > ../static/app.js",
-    "js:watch": "nodemon --watch js/app.ts --exec 'npm run js'"
+    "js:watch": "nodemon --watch js/app.ts -e ts --exec 'npm run js'"
   },
   "type": "module"
 }
