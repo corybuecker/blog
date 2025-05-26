@@ -1,6 +1,7 @@
 use axum::{
     Router,
     extract::Request,
+    http::StatusCode,
     middleware::{Next, from_fn},
     response::IntoResponse,
     routing::get,
@@ -65,7 +66,8 @@ async fn server_handler(state: Arc<SharedState>) {
         .nest("/admin", admin::admin_routes(state.clone()))
         .with_state(state.clone())
         .layer(TraceLayer::new_for_http())
-        .layer(from_fn(metrics));
+        .layer(from_fn(metrics))
+        .route("/healthcheck", get(StatusCode::OK));
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:8000").await.unwrap();
 
