@@ -85,7 +85,7 @@ pub async fn create(
 
     client.execute(
         "INSERT INTO pages (content, created_at, description, markdown, preview, slug, title, updated_at)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)", 
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
         &[
             &new_page.content,
             &new_page.created_at,
@@ -117,7 +117,7 @@ impl SyntaxHighlighterAdapter for SyntaxAdapter {
         _lang: Option<&str>,
         code: &str,
     ) -> io::Result<()> {
-        write!(output, "{}", code)
+        write!(output, "{code}")
     }
 
     fn write_pre_tag(
