@@ -7,7 +7,7 @@ edition = "2024"
 anyhow = { version = "1.0.98" }
 axum = { version = "0.8.4" }
 chrono = { version = "0.4.41" }
-comrak = { version = "0.39.0" }
+comrak = { version = "0.39.1" }
 include_dir = { version = "0.7.4", features = ["glob"] }
 openidconnect = { version = "4.0.0", features = ["reqwest"] }
 rand = { version = "0.9.1" }
