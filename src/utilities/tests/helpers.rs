@@ -14,7 +14,7 @@ use tokio_postgres::{Client, NoTls, Socket, connect, tls::NoTlsStream};
 #[allow(dead_code)]
 pub fn random_slug(prefix: &str) -> String {
     let random_part = random_string(24).to_lowercase();
-    format!("{}-{}", prefix, random_part)
+    format!("{prefix}-{random_part}")
 }
 
 // Generate a random string of specified length
