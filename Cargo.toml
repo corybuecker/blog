@@ -1,0 +1,27 @@
+[package]
+name = "blog"
+version = "1.0.0-dev"
+edition = "2024"
+
+[dependencies]
+anyhow = { version = "1.0.98" }
+axum = { version = "0.8.4" }
+chrono = { version = "0.4.41" }
+comrak = { version = "0.39.1" }
+include_dir = { version = "0.7.4", features = ["glob"] }
+openidconnect = { version = "4.0.1", features = ["reqwest"] }
+rand = { version = "0.9.1" }
+rust-web-common = { git = "https://github.com/corybuecker/rust-web-common", branch = "main" }
+serde = { version = "1.0.219" }
+tera = { version = "1.20.0", features = ["builtins"] }
+tokio = { version = "1.46.1", default-features = false, features = [
+    "macros",
+    "rt-multi-thread",
+    "signal",
+    "fs",
+] }
+tokio-postgres = { version = "0.7.13", features = ["with-chrono-0_4"] }
+tower-cookies = { version = "0.11.0", features = ["signed"] }
+tower-http = { version = "0.6.6", features = ["trace", "fs"] }
+tracing = { version = "0.1.41" }
+xml-builder = { version = "0.5" }

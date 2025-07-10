@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: blog
+  labels:
+    name: blog
+    pod-security.kubernetes.io/enforce: restricted

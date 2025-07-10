@@ -1,0 +1,25 @@
+name: branch-protection
+on:
+  pull_request:
+    branches:
+      - main
+permissions:
+  contents: read
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions-rust-lang/setup-rust-toolchain@fb51252c7ba57d633bc668f941da052e410add48
+        with:
+          components: clippy
+      - run: cargo clippy --no-deps -- -D warnings
+  test:
+    runs-on: ubuntu-latest
+    env:
+      TEST_DATABASE_URL: "postgres://blog@localhost:5432/blog"
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - run: docker run -d -p 5432:5432 -e POSTGRES_HOST_AUTH_METHOD=trust -e POSTGRES_USER=blog -e POSTGRES_DB=blog -v ./migrations/schema.sql:/docker-entrypoint-initdb.d/schema.sql postgres:17.4
+      - uses: actions-rust-lang/setup-rust-toolchain@fb51252c7ba57d633bc668f941da052e410add48
+      - run: cargo test

@@ -1,0 +1,36 @@
+services:
+  postgres:
+    image: postgres@sha256:6efd0df010dc3cb40d5e33e3ef84acecc5e73161bd3df06029ee8698e5e12c60 # 17.5
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_HOST_AUTH_METHOD: trust
+      POSTGRES_DB: blog
+      POSTGRES_USER: blog
+    volumes:
+      - ../migrations/schema.sql:/docker-entrypoint-initdb.d/0000.sql
+      - ./seed.sql:/docker-entrypoint-initdb.d/0001.sql
+  # prometheus:
+  #   image: prom/prometheus@sha256:339ce86a59413be18d0e445472891d022725b4803fab609069110205e79fb2f1 # v3.3.0
+  #   ports:
+  #     - 9090:9090
+  #   command:
+  #     - --config.file=/etc/prometheus/prometheus.yml
+  #     - --storage.tsdb.path=/prometheus
+  #     - --web.enable-otlp-receiver
+  jaeger:
+    image: jaegertracing/jaeger@sha256:20d715ade1cf32e8c2be1a288317c2126376ce60811be71f0856793d7f849127 # 2.5.0
+    ports:
+      - 16686:16686
+      - 4318:4318
+  # grafana:
+  #   image: grafana/grafana@sha256:52c3e20686b860c6dc1f623811565773cf51eefa378817a4896dfc863c3c82c8 # 11.6.1
+  #   ports:
+  #     - 3000:3000
+  # analytics:
+  #   image: ghcr.io/corybuecker/analytics-collector@sha256:21a389755040efee2e09d3977df0ef2a47071d0352c4e141854e467f76df35e0 # latest
+  #   ports:
+  #     - 8001:8000
+  #   environment:
+  #     - LOG_LEVEL=debug
+  #     - TRACING_ENDPOINT=http://jaeger:4318/v1/traces

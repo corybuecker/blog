@@ -1,0 +1,19 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+images:
+  - name: blog
+    newName: ghcr.io/corybuecker/blog
+    digest: sha256:b88fa9c8e88cd5fcb71507365228f8d9ade36a4f52d73c3b3b7454c3e56d9635
+
+resources:
+  - namespace.yaml
+  - deployment.yaml
+  - service.yaml
+  - httproute.yaml
+
+secretGenerator:
+  - name: blog
+    namespace: blog
+    envs:
+      - .env
