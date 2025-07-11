@@ -11,8 +11,8 @@ use chrono::{DateTime, Utc};
 use comrak::{Arena, Options, nodes::NodeValue, parse_document};
 use std::{collections::HashMap, sync::Arc};
 use tokio::fs::{self, DirEntry, read_dir};
-use tracing::{debug, instrument};
 
+#[allow(dead_code)]
 #[derive(Debug)]
 pub struct PublishedPage {
     pub published_at: DateTime<Utc>,
@@ -21,6 +21,7 @@ pub struct PublishedPage {
 
 pub type PublishedPages = Vec<PublishedPage>;
 
+#[allow(dead_code)]
 #[derive(Debug)]
 struct Frontmatter {
     pub description: String,
@@ -68,11 +69,9 @@ fn frontmatter_to_hashmap(frontmatter_string: &str) -> Result<HashMap<String, St
     let frontmatter = frontmatter
         .split("\n")
         .filter_map(|a| {
-            if let Some((key, value)) = a.split_once(":") {
-                Some((key.trim().to_string(), value.trim().to_string()))
-            } else {
-                None
-            }
+            Option::map(a.split_once(":"), |(key, value)| {
+                (key.trim().to_string(), value.trim().to_string())
+            })
         })
         .collect::<HashMap<String, String>>();
 
@@ -121,12 +120,11 @@ pub async fn published_pages() -> Result<PublishedPages> {
 
     let published_pages: PublishedPages = published_pages
         .iter()
-        .filter_map(|(a, b)| match b.path().to_str() {
-            Some(path) => Some(PublishedPage {
-                published_at: a.clone(),
+        .filter_map(|(a, b)| {
+            Option::map(b.path().to_str(), |path| PublishedPage {
+                published_at: a.to_owned(),
                 path: path.to_string(),
-            }),
-            None => None,
+            })
         })
         .collect();
 
