@@ -1,16 +1,14 @@
-use crate::types::{AppError, Page, SharedState};
+use crate::types::AppError;
 use anyhow::{Context, anyhow};
 use axum::http::{StatusCode, header};
-use axum::{body::Body, extract::State, http::HeaderValue, response::IntoResponse};
-use std::sync::Arc;
+use axum::{body::Body, http::HeaderValue, response::IntoResponse};
+use chrono::Utc;
 use xml_builder::{XMLBuilder, XMLElement, XMLVersion};
 
-pub async fn build_response(
-    State(shared_state): State<Arc<SharedState>>,
-) -> Result<impl IntoResponse, AppError> {
-    let client = shared_state.client.read().await;
+use super::published_pages;
 
-    let pages = Page::published(&client).await?;
+pub async fn build_response() -> Result<impl IntoResponse, AppError> {
+    let published_pages = published_pages().await?;
 
     let mut xml = XMLBuilder::new()
         .version(XMLVersion::XML1_1)
@@ -20,7 +18,7 @@ pub async fn build_response(
     let mut urlset = XMLElement::new("urlset");
     urlset.add_attribute("xmlns", "http://www.sitemaps.org/schemas/sitemap/0.9");
 
-    for (current_index, page) in pages.into_iter().enumerate() {
+    for (current_index, page) in published_pages.into_iter().enumerate() {
         let mut url = XMLElement::new("url");
         let mut loc = XMLElement::new("loc");
 
@@ -29,8 +27,11 @@ pub async fn build_response(
             loc.add_text("https://corybuecker.com".to_string())
                 .map_err(|e| anyhow!("Failed to add homepage URL: {}", e))?;
         } else {
-            loc.add_text(format!("https://corybuecker.com/post/{}", page.slug))
-                .map_err(|e| anyhow!("Failed to add page URL: {}", e))?;
+            loc.add_text(format!(
+                "https://corybuecker.com/post/{}",
+                page.frontmatter.slug
+            ))
+            .map_err(|e| anyhow!("Failed to add page URL: {}", e))?;
         }
 
         url.add_child(loc)
@@ -38,9 +39,10 @@ pub async fn build_response(
 
         // Use the most recent timestamp available
         let last_modified = page
+            .frontmatter
             .revised_at
-            .or(page.published_at)
-            .unwrap_or(page.created_at);
+            .or(page.frontmatter.published_at)
+            .unwrap_or(Utc::now());
 
         let mut lastmod = XMLElement::new("lastmod");
         lastmod

@@ -1,7 +1,7 @@
 pub mod home;
 pub mod sitemap;
 
-use crate::types::{AppError, Page, SharedState};
+use crate::types::{AppError, SharedState};
 use anyhow::{Context, Result, anyhow};
 use axum::{
     extract::{Path, State},
@@ -9,21 +9,24 @@ use axum::{
 };
 use chrono::{DateTime, Utc};
 use comrak::{Arena, Options, nodes::NodeValue, parse_document};
+use serde::Serialize;
 use std::{collections::HashMap, sync::Arc};
 use tokio::fs::{self, DirEntry, read_dir};
+use tracing::instrument;
 
 #[allow(dead_code)]
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct PublishedPage {
     pub published_at: DateTime<Utc>,
     pub path: String,
+    pub frontmatter: Frontmatter,
 }
 
 pub type PublishedPages = Vec<PublishedPage>;
 
 #[allow(dead_code)]
-#[derive(Debug)]
-struct Frontmatter {
+#[derive(Debug, Serialize)]
+pub struct Frontmatter {
     pub description: String,
     pub preview: String,
     pub published_at: Option<DateTime<Utc>>,
@@ -78,6 +81,7 @@ fn frontmatter_to_hashmap(frontmatter_string: &str) -> Result<HashMap<String, St
     Ok(frontmatter)
 }
 
+#[instrument]
 async fn extract_frontmatter_from_content_file(content_file: &DirEntry) -> Result<Frontmatter> {
     let contents = fs::read(content_file.path()).await?;
     let contents = String::from_utf8(contents)?;
@@ -100,10 +104,32 @@ async fn extract_frontmatter_from_content_file(content_file: &DirEntry) -> Resul
     Frontmatter::from_hashmap(frontmatter)
 }
 
+#[instrument]
+async fn without_frontmatter(content_file: &String) -> Result<String> {
+    let contents = fs::read(content_file).await?;
+    let contents = String::from_utf8(contents)?;
+
+    let arena = Arena::new();
+    let mut options = Options::default();
+    options.extension.front_matter_delimiter = Some(String::from("---"));
+    let nodes = parse_document(&arena, &contents, &options);
+
+    for node in nodes.descendants() {
+        if let NodeValue::FrontMatter(ref mut a) = node.data.borrow_mut().value {
+            *a = String::new();
+        }
+    }
+
+    let mut html = Vec::new();
+    comrak::format_html(nodes, &options, &mut html)?;
+    Ok(String::from_utf8(html)?)
+}
+
+#[instrument]
 pub async fn published_pages() -> Result<PublishedPages> {
     let mut content_files = read_dir("./content").await?;
 
-    let mut published_pages: Vec<(DateTime<Utc>, DirEntry)> = Vec::new();
+    let mut published_pages: PublishedPages = Vec::new();
 
     while let Some(content_file) = content_files.next_entry().await? {
         let frontmatter = extract_frontmatter_from_content_file(&content_file).await?;
@@ -111,22 +137,24 @@ pub async fn published_pages() -> Result<PublishedPages> {
         match frontmatter.published_at {
             None => {}
             Some(published_at) => {
-                published_pages.push((published_at, content_file));
+                published_pages.push(PublishedPage {
+                    published_at,
+                    path: content_file
+                        .path()
+                        .to_str()
+                        .ok_or(anyhow!("could not extract path as string"))?
+                        .to_string(),
+                    frontmatter,
+                });
             }
         }
     }
 
-    published_pages.sort_by(|a, b| b.0.timestamp_micros().cmp(&a.0.timestamp_micros()));
-
-    let published_pages: PublishedPages = published_pages
-        .iter()
-        .filter_map(|(a, b)| {
-            Option::map(b.path().to_str(), |path| PublishedPage {
-                published_at: a.to_owned(),
-                path: path.to_string(),
-            })
-        })
-        .collect();
+    published_pages.sort_by(|a, b| {
+        b.published_at
+            .timestamp_micros()
+            .cmp(&a.published_at.timestamp_micros())
+    });
 
     Ok(published_pages)
 }
@@ -137,26 +165,29 @@ pub async fn build_response(
 ) -> Result<Html<String>, AppError> {
     let tera = &shared_state.tera;
     let mut context = tera::Context::new();
-    let client = shared_state.client.read().await;
 
-    let page: Page = client
-        .query_one(
-            "SELECT * FROM pages WHERE published_at IS NOT NULL AND slug = $1",
-            &[&slug],
-        )
-        .await
-        .context("could not find page")?
-        .try_into()?;
+    let published_pages = published_pages().await?;
+    let published_page = published_pages
+        .iter()
+        .find(|f| f.frontmatter.slug == slug)
+        .ok_or(anyhow!("could not find page"))?;
 
-    context.insert("page", &page);
-    context.insert("description", &page.description);
-    let mut title = page.title.to_owned();
+    let content = without_frontmatter(&published_page.path).await?;
+    let description = published_page.frontmatter.description.clone();
+    let published_at = published_page.published_at;
+    let revised_at = published_page.frontmatter.revised_at;
+    let mut title = published_page.frontmatter.title.clone();
     title.push_str(" - Cory Buecker");
+
+    context.insert("content", &content);
+    context.insert("description", &description);
     context.insert("title", &title);
+    context.insert("published_at", &published_at);
+    context.insert("revised_at", &revised_at);
 
     let rendered = tera
         .render("pages/page.html", &context)
-        .map_err(|e| anyhow!("could not render template: {}", e))?;
+        .map_err(|e| anyhow!("could not render template: {e}"))?;
 
     Ok(Html(rendered))
 }
@@ -166,58 +197,4 @@ pub async fn remove_slash(Path(path_slug): Path<String>) -> Redirect {
     redirect.push_str(&path_slug);
 
     Redirect::permanent(&redirect)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::utilities::tests::helpers::{
-        cleanup_test_data, create_test_shared_state, random_slug, setup_test_data,
-    };
-    use chrono::Utc;
-
-    #[tokio::test]
-    async fn test_build_response_happy_path() -> anyhow::Result<()> {
-        // Create a test shared state
-        let shared_state = create_test_shared_state().await?;
-        let client = shared_state.client.read().await;
-
-        // Set up test data
-        setup_test_data(&client).await?;
-
-        // Insert a test page
-        let now = Utc::now();
-        let test_slug = random_slug("homepage");
-        shared_state.client.read().await.execute(
-            "INSERT INTO pages (title, slug, content, markdown, description, preview, created_at, updated_at, published_at)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
-            &[
-                &"Test Page",
-                &test_slug,
-                &"<p>Test content</p>",
-                &"Test content",
-                &"Test description",
-                &"Test preview",
-                &now,
-                &now,
-                &now
-            ]
-        ).await?;
-
-        // Call the function under test
-        let result = build_response(Path(test_slug.to_string()), State(shared_state.clone()))
-            .await
-            .unwrap();
-
-        // Verify the result
-        let html = result.0;
-        assert!(html.contains("Test Page"));
-        assert!(html.contains("Test content"));
-        assert!(html.contains("Test Page - Cory Buecker")); // Check title format
-
-        // Clean up test data
-        cleanup_test_data(&client).await?;
-
-        Ok(())
-    }
 }
