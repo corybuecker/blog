@@ -48,6 +48,7 @@ pub struct Page {
 }
 
 impl Page {
+    #[allow(dead_code)]
     pub async fn published(client: &Client) -> Result<Vec<Self>> {
         let rows = client
             .query(

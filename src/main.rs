@@ -6,14 +6,13 @@ use axum::{
     response::IntoResponse,
     routing::get,
 };
-use pages::published_pages;
 use rust_web_common::telemetry::TelemetryBuilder;
 use std::{sync::Arc, time::Duration};
 use tera::Tera;
 use tokio::{select, signal::unix::SignalKind, sync::RwLock, time::sleep};
 use tokio_postgres::{NoTls, connect};
 use tower_http::{services::ServeDir, trace::TraceLayer};
-use tracing::{debug, info};
+use tracing::info;
 use types::SharedState;
 use utilities::tera::{digest_asset, embed_templates};
 
@@ -101,7 +100,6 @@ async fn main() {
         .build()
         .expect("failed to initialize telemetry");
 
-    debug!("{:#?}", published_pages().await.unwrap());
     let mut tera = Tera::default();
 
     tera.register_function("digest_asset", digest_asset());
