@@ -7,46 +7,17 @@ use axum::{
     routing::get,
 };
 use rust_web_common::telemetry::TelemetryBuilder;
-use std::{sync::Arc, time::Duration};
+use std::sync::Arc;
 use tera::Tera;
-use tokio::{select, signal::unix::SignalKind, sync::RwLock, time::sleep};
-use tokio_postgres::{NoTls, connect};
+use tokio::{select, signal::unix::SignalKind};
 use tower_http::{services::ServeDir, trace::TraceLayer};
 use tracing::info;
 use types::SharedState;
 use utilities::tera::{digest_asset, embed_templates};
 
-mod admin;
 mod pages;
 mod types;
 mod utilities;
-
-async fn database_connection_handler(state: Arc<SharedState>) {
-    let database_url = std::env::var("DATABASE_URL").unwrap();
-
-    loop {
-        let (client, connection) = match connect(&database_url, NoTls).await {
-            Ok((client, connection)) => {
-                info!("Connected to database");
-                (client, connection)
-            }
-            Err(e) => {
-                tracing::error!("Failed to connect to database: {}", e);
-                sleep(Duration::from_secs(5)).await;
-                continue;
-            }
-        };
-
-        let mut guard = state.client.write().await;
-        *guard = client;
-        drop(guard);
-
-        if let Err(e) = connection.await {
-            tracing::error!("Connection error: {}", e);
-            continue;
-        }
-    }
-}
 
 async fn shutdown_handler() {
     let mut signal = tokio::signal::unix::signal(SignalKind::terminate())
@@ -63,7 +34,6 @@ async fn server_handler(state: Arc<SharedState>) {
         .route("/sitemap.xml", get(pages::sitemap::build_response))
         .nest_service("/assets", ServeDir::new("static"))
         .nest_service("/images", ServeDir::new("static/images"))
-        .nest("/admin", admin::admin_routes(state.clone()))
         .with_state(state.clone())
         .layer(TraceLayer::new_for_http())
         .layer(from_fn(metrics))
@@ -107,17 +77,10 @@ async fn main() {
         .map_err(|e| anyhow::anyhow!("Failed to embed templates: {}", e))
         .unwrap();
 
-    let database_url = std::env::var("DATABASE_URL").unwrap();
-    let (client, _) = connect(&database_url, NoTls).await.unwrap();
-
-    let shared_state = Arc::new(SharedState {
-        tera,
-        client: RwLock::new(client),
-    });
+    let shared_state = Arc::new(SharedState { tera });
 
     select! {
         _ = shutdown_handler() => {}
         _ = server_handler(shared_state.clone()) => {}
-        _ = database_connection_handler(shared_state.clone()) => {}
     }
 }
