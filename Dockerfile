@@ -24,6 +24,7 @@ RUN mkdir -p /opt/blog
 WORKDIR /opt/blog
 COPY --from=backend_builder /build/blog /opt/blog/
 COPY static /opt/blog/static
+COPY content /opt/blog/content
 COPY --from=frontend_builder /assets/app.css /assets/app.js /opt/blog/static/
 USER 1000
 ENTRYPOINT ["/opt/blog/blog"]
