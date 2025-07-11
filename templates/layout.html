@@ -5,13 +5,14 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1" />
     <link rel="me" href="https://github.com/corybuecker">
-    <link rel="icon" href="{{ digest_asset(file="/favicon.ico") | safe }}" sizes="48x48" />
-    <link rel="icon" href="{{ digest_asset(file="/favicon.svg") | safe }}" sizes="any" type="image/svg+xml" />
     {% if description %}
     <meta name="description" content="{{ description }}" />
     {% endif %}
     <title>{{ title }}</title>
     <link rel="stylesheet" href="{{ digest_asset(file="app.css") | safe }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ digest_asset(file="favicon/apple-touch-icon.png") | safe }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ digest_asset(file="favicon/favicon-32x32.png") | safe }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ digest_asset(file="favicon/favicon-16x16.png") | safe }}">
 </head>
 
 <body class="@container">

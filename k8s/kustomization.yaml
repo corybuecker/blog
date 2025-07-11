@@ -4,7 +4,7 @@ kind: Kustomization
 images:
   - name: blog
     newName: ghcr.io/corybuecker/blog
-    digest: sha256:b4cf7058e79ec4bf6ea69683d46f64506d9edb7517943b887c06cf50c00eda04
+    digest: sha256:bf5a142336241f4935040490d96de0d56f4df497d722497cc75c3dc67c9b6d81
 
 resources:
   - namespace.yaml
