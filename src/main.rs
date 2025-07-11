@@ -6,18 +6,42 @@ use axum::{
     response::IntoResponse,
     routing::get,
 };
+use pages::{PublishedPages, PublishedPagesBuilder};
 use rust_web_common::telemetry::TelemetryBuilder;
 use std::sync::Arc;
 use tera::Tera;
 use tokio::{select, signal::unix::SignalKind};
 use tower_http::{services::ServeDir, trace::TraceLayer};
-use tracing::info;
-use types::SharedState;
+use tracing::{error, info};
 use utilities::tera::{digest_asset, embed_templates};
 
 mod pages;
-mod types;
 mod utilities;
+
+#[derive(Debug)]
+pub struct AppError(anyhow::Error);
+
+impl From<anyhow::Error> for AppError {
+    fn from(err: anyhow::Error) -> Self {
+        AppError(err)
+    }
+}
+
+impl IntoResponse for AppError {
+    fn into_response(self) -> axum::response::Response {
+        error!("{}", self.0);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "Something has gone wrong.",
+        )
+            .into_response()
+    }
+}
+
+pub struct SharedState {
+    pub tera: Tera,
+    pub published_pages: Box<dyn PublishedPagesBuilder>,
+}
 
 async fn shutdown_handler() {
     let mut signal = tokio::signal::unix::signal(SignalKind::terminate())
@@ -29,8 +53,8 @@ async fn shutdown_handler() {
 async fn server_handler(state: Arc<SharedState>) {
     let app = Router::new()
         .route("/", get(pages::home::build_response))
-        .route("/post/{slug}/", get(pages::remove_slash))
-        .route("/post/{slug}", get(pages::build_response))
+        .route("/post/{slug}/", get(pages::page::remove_slash))
+        .route("/post/{slug}", get(pages::page::build_response))
         .route("/sitemap.xml", get(pages::sitemap::build_response))
         .nest_service("/assets", ServeDir::new("static"))
         .nest_service("/images", ServeDir::new("static/images"))
@@ -77,7 +101,10 @@ async fn main() {
         .map_err(|e| anyhow::anyhow!("Failed to embed templates: {}", e))
         .unwrap();
 
-    let shared_state = Arc::new(SharedState { tera });
+    let shared_state = Arc::new(SharedState {
+        tera,
+        published_pages: Box::new(PublishedPages),
+    });
 
     select! {
         _ = shutdown_handler() => {}
