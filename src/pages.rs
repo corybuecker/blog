@@ -34,11 +34,15 @@ pub struct Frontmatter {
 pub struct PublishedPages;
 
 pub trait PublishedPagesBuilder: Send + Sync {
-    fn build<'f>(&'f self) -> Pin<Box<dyn Future<Output = Result<Vec<PublishedPage>>> + 'f>>;
+    fn fetch<'f>(
+        &'f self,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<PublishedPage>>> + Send + Sync + 'f>>;
 }
 
 impl PublishedPagesBuilder for PublishedPages {
-    fn build<'f>(&'f self) -> Pin<Box<dyn Future<Output = Result<Vec<PublishedPage>>> + 'f>> {
+    fn fetch<'f>(
+        &'f self,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<PublishedPage>>> + Send + Sync + 'f>> {
         Box::pin(published_pages())
     }
 }
@@ -134,7 +138,7 @@ async fn without_frontmatter(content_file: &String) -> Result<String> {
 }
 
 #[instrument]
-pub async fn published_pages() -> Result<Vec<PublishedPage>> {
+async fn published_pages() -> Result<Vec<PublishedPage>> {
     let mut content_files = read_dir("./content").await?;
 
     let mut published_pages: Vec<PublishedPage> = Vec::new();

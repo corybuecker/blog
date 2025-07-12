@@ -40,7 +40,7 @@ impl IntoResponse for AppError {
 
 pub struct SharedState {
     pub tera: Tera,
-    pub published_pages_fetch: Box<dyn PublishedPagesBuilder>,
+    pub published_pages: Box<dyn PublishedPagesBuilder>,
 }
 
 async fn shutdown_handler() {
@@ -103,7 +103,7 @@ async fn main() {
 
     let shared_state = Arc::new(SharedState {
         tera,
-        published_pages_fetch: Box::new(PublishedPages),
+        published_pages: Box::new(PublishedPages),
     });
 
     select! {

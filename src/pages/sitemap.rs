@@ -1,13 +1,17 @@
-use super::published_pages;
-use crate::AppError;
+use std::sync::Arc;
+
+use crate::{AppError, SharedState};
 use anyhow::{Context, anyhow};
+use axum::extract::State;
 use axum::http::{StatusCode, header};
 use axum::{body::Body, http::HeaderValue, response::IntoResponse};
 use chrono::Utc;
 use xml_builder::{XMLBuilder, XMLElement, XMLVersion};
 
-pub async fn build_response() -> Result<impl IntoResponse, AppError> {
-    let published_pages = published_pages().await?;
+pub async fn build_response(
+    State(state): State<Arc<SharedState>>,
+) -> Result<impl IntoResponse, AppError> {
+    let published_pages = state.published_pages.fetch().await?;
 
     let mut xml = XMLBuilder::new()
         .version(XMLVersion::XML1_1)

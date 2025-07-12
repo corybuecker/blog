@@ -1,4 +1,4 @@
-use super::{published_pages, without_frontmatter};
+use super::without_frontmatter;
 use crate::{AppError, SharedState};
 use anyhow::anyhow;
 use axum::{extract::State, response::Html};
@@ -17,7 +17,7 @@ pub async fn build_response(
     let tera = &shared_state.tera;
     let mut context = tera::Context::new();
 
-    let published_pages = published_pages().await?;
+    let published_pages = shared_state.published_pages.fetch().await?;
     let published_page = published_pages
         .first()
         .ok_or(anyhow!("could not get homepage"))?;
