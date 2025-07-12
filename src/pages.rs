@@ -10,7 +10,7 @@ use axum::{
 use chrono::{DateTime, Utc};
 use comrak::{Arena, Options, nodes::NodeValue, parse_document};
 use serde::Serialize;
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap, pin::Pin, sync::Arc};
 use tokio::fs::{self, DirEntry, read_dir};
 use tracing::instrument;
 
@@ -21,8 +21,6 @@ pub struct PublishedPage {
     pub frontmatter: Frontmatter,
 }
 
-pub type PublishedPages = Vec<PublishedPage>;
-
 #[derive(Debug, Serialize)]
 pub struct Frontmatter {
     pub description: String,
@@ -31,6 +29,18 @@ pub struct Frontmatter {
     pub revised_at: Option<DateTime<Utc>>,
     pub slug: String,
     pub title: String,
+}
+
+pub struct PublishedPages;
+
+pub trait PublishedPagesBuilder: Send + Sync {
+    fn build<'f>(&'f self) -> Pin<Box<dyn Future<Output = Result<Vec<PublishedPage>>> + 'f>>;
+}
+
+impl PublishedPagesBuilder for PublishedPages {
+    fn build<'f>(&'f self) -> Pin<Box<dyn Future<Output = Result<Vec<PublishedPage>>> + 'f>> {
+        Box::pin(published_pages())
+    }
 }
 
 impl Frontmatter {
@@ -124,10 +134,10 @@ async fn without_frontmatter(content_file: &String) -> Result<String> {
 }
 
 #[instrument]
-pub async fn published_pages() -> Result<PublishedPages> {
+pub async fn published_pages() -> Result<Vec<PublishedPage>> {
     let mut content_files = read_dir("./content").await?;
 
-    let mut published_pages: PublishedPages = Vec::new();
+    let mut published_pages: Vec<PublishedPage> = Vec::new();
 
     while let Some(content_file) = content_files.next_entry().await? {
         let frontmatter = extract_frontmatter_from_content_file(&content_file).await?;

@@ -1,10 +1,9 @@
+use super::{published_pages, without_frontmatter};
 use crate::{AppError, SharedState};
 use anyhow::anyhow;
 use axum::{extract::State, response::Html};
 use serde::Serialize;
 use std::{collections::VecDeque, sync::Arc};
-
-use super::{published_pages, without_frontmatter};
 
 #[derive(Serialize, Debug)]
 struct Link {
