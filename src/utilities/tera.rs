@@ -1,9 +1,10 @@
 use anyhow::Result;
-use include_dir::{Dir, include_dir};
 use std::{collections::HashMap, time::SystemTime};
 use tera::{Function, Tera, Value};
 
-static TEMPLATES: Dir = include_dir!("templates");
+static LAYOUT_TEMPLATE: &'static str = include_str!("../../templates/layout.html");
+static PAGES_HOME_TEMPLATE: &'static str = include_str!("../../templates/pages/home.html");
+static PAGES_PAGE_TEMPLATE: &'static str = include_str!("../../templates/pages/page.html");
 
 pub fn digest_asset() -> impl Function {
     let key = SystemTime::now();
@@ -33,21 +34,11 @@ pub fn digest_asset() -> impl Function {
 }
 
 pub fn embed_templates(tera: &mut Tera) -> Result<()> {
-    let templates = TEMPLATES
-        .find("**/*.html")
-        .unwrap()
-        .map(|d| {
-            (
-                d.path().to_str().unwrap(),
-                TEMPLATES
-                    .get_file(d.path())
-                    .unwrap()
-                    .contents_utf8()
-                    .unwrap(),
-            )
-        })
-        .collect::<Vec<(&str, &str)>>();
-
+    let templates = vec![
+        ("layout.html", LAYOUT_TEMPLATE),
+        ("pages/home.html", PAGES_HOME_TEMPLATE),
+        ("pages/page.html", PAGES_PAGE_TEMPLATE),
+    ];
     tera.add_raw_templates(templates).unwrap();
 
     Ok(())

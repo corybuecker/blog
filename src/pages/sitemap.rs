@@ -1,11 +1,10 @@
+use super::published_pages;
 use crate::AppError;
 use anyhow::{Context, anyhow};
 use axum::http::{StatusCode, header};
 use axum::{body::Body, http::HeaderValue, response::IntoResponse};
 use chrono::Utc;
 use xml_builder::{XMLBuilder, XMLElement, XMLVersion};
-
-use super::published_pages;
 
 pub async fn build_response() -> Result<impl IntoResponse, AppError> {
     let published_pages = published_pages().await?;
