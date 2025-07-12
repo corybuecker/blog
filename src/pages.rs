@@ -14,7 +14,6 @@ use std::{collections::HashMap, sync::Arc};
 use tokio::fs::{self, DirEntry, read_dir};
 use tracing::instrument;
 
-#[allow(dead_code)]
 #[derive(Debug, Serialize)]
 pub struct PublishedPage {
     pub published_at: DateTime<Utc>,
@@ -24,7 +23,6 @@ pub struct PublishedPage {
 
 pub type PublishedPages = Vec<PublishedPage>;
 
-#[allow(dead_code)]
 #[derive(Debug, Serialize)]
 pub struct Frontmatter {
     pub description: String,

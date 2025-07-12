@@ -6,7 +6,6 @@ use std::{collections::VecDeque, sync::Arc};
 
 use super::{published_pages, without_frontmatter};
 
-#[allow(dead_code)]
 #[derive(Serialize, Debug)]
 struct Link {
     title: String,
