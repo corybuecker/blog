@@ -1,11 +1,10 @@
-use std::sync::Arc;
-
 use crate::{AppError, SharedState};
 use anyhow::{Context, anyhow};
 use axum::extract::State;
 use axum::http::{StatusCode, header};
 use axum::{body::Body, http::HeaderValue, response::IntoResponse};
 use chrono::Utc;
+use std::sync::Arc;
 use xml_builder::{XMLBuilder, XMLElement, XMLVersion};
 
 pub async fn build_response(

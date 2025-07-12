@@ -53,8 +53,8 @@ async fn shutdown_handler() {
 async fn server_handler(state: Arc<SharedState>) {
     let app = Router::new()
         .route("/", get(pages::home::build_response))
-        .route("/post/{slug}/", get(pages::remove_slash))
-        .route("/post/{slug}", get(pages::build_response))
+        .route("/post/{slug}/", get(pages::page::remove_slash))
+        .route("/post/{slug}", get(pages::page::build_response))
         .route("/sitemap.xml", get(pages::sitemap::build_response))
         .nest_service("/assets", ServeDir::new("static"))
         .nest_service("/images", ServeDir::new("static/images"))
