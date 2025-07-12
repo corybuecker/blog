@@ -92,16 +92,14 @@ fn frontmatter_to_hashmap(frontmatter_string: &str) -> Result<HashMap<String, St
 }
 
 #[instrument]
-async fn extract_frontmatter_from_content_file(content_file: &DirEntry) -> Result<Frontmatter> {
-    let contents = fs::read(content_file.path()).await?;
-    let contents = String::from_utf8(contents)?;
-
+async fn extract_frontmatter_from_content_file(content: &str) -> Result<Frontmatter> {
     let mut frontmatter = String::new();
-
     let arena = Arena::new();
+
     let mut options = Options::default();
     options.extension.front_matter_delimiter = Some(String::from("---"));
-    let nodes = parse_document(&arena, &contents, &options);
+
+    let nodes = parse_document(&arena, content, &options);
 
     for node in nodes.descendants() {
         if let NodeValue::FrontMatter(ref mut a) = node.data.borrow_mut().value {
@@ -115,14 +113,11 @@ async fn extract_frontmatter_from_content_file(content_file: &DirEntry) -> Resul
 }
 
 #[instrument]
-async fn without_frontmatter(content_file: &String) -> Result<String> {
-    let contents = fs::read(content_file).await?;
-    let contents = String::from_utf8(contents)?;
-
+async fn without_frontmatter(content: &str) -> Result<String> {
     let arena = Arena::new();
     let mut options = Options::default();
     options.extension.front_matter_delimiter = Some(String::from("---"));
-    let nodes = parse_document(&arena, &contents, &options);
+    let nodes = parse_document(&arena, content, &options);
 
     for node in nodes.descendants() {
         if let NodeValue::FrontMatter(ref mut a) = node.data.borrow_mut().value {
@@ -142,7 +137,9 @@ async fn published_pages() -> Result<Vec<PublishedPage>> {
     let mut published_pages: Vec<PublishedPage> = Vec::new();
 
     while let Some(content_file) = content_files.next_entry().await? {
-        let frontmatter = extract_frontmatter_from_content_file(&content_file).await?;
+        let content = fs::read(content_file.path()).await?;
+        let content = String::from_utf8(content)?;
+        let frontmatter = extract_frontmatter_from_content_file(&content).await?;
 
         match frontmatter.published_at {
             None => {}
