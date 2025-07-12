@@ -2,9 +2,9 @@ use anyhow::Result;
 use std::{collections::HashMap, time::SystemTime};
 use tera::{Function, Tera, Value};
 
-static LAYOUT_TEMPLATE: &'static str = include_str!("../../templates/layout.html");
-static PAGES_HOME_TEMPLATE: &'static str = include_str!("../../templates/pages/home.html");
-static PAGES_PAGE_TEMPLATE: &'static str = include_str!("../../templates/pages/page.html");
+static LAYOUT_TEMPLATE: &str = include_str!("../../templates/layout.html");
+static PAGES_HOME_TEMPLATE: &str = include_str!("../../templates/pages/home.html");
+static PAGES_PAGE_TEMPLATE: &str = include_str!("../../templates/pages/page.html");
 
 pub fn digest_asset() -> impl Function {
     let key = SystemTime::now();
@@ -98,7 +98,7 @@ mod tests {
 
         // Check that templates are accessible
         let template_names = tera.get_template_names().collect::<Vec<_>>();
-        assert!(template_names.len() > 0);
+        assert!(!template_names.is_empty());
 
         // Check for specific templates that should exist
         assert!(template_names.contains(&"layout.html"));
