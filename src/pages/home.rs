@@ -1,4 +1,4 @@
-use crate::types::{AppError, SharedState};
+use crate::{AppError, SharedState};
 use anyhow::anyhow;
 use axum::{extract::State, response::Html};
 use serde::Serialize;

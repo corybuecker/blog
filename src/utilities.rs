@@ -21,7 +21,3 @@ pub fn read_all_files(path: &Path) -> Result<Vec<DirEntry>> {
 
     Ok(files)
 }
-
-pub mod tests {
-    pub mod helpers;
-}

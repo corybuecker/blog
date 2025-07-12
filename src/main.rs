@@ -11,13 +11,35 @@ use std::sync::Arc;
 use tera::Tera;
 use tokio::{select, signal::unix::SignalKind};
 use tower_http::{services::ServeDir, trace::TraceLayer};
-use tracing::info;
-use types::SharedState;
+use tracing::{error, info};
 use utilities::tera::{digest_asset, embed_templates};
 
 mod pages;
-mod types;
 mod utilities;
+
+#[derive(Debug)]
+pub struct AppError(anyhow::Error);
+
+impl From<anyhow::Error> for AppError {
+    fn from(err: anyhow::Error) -> Self {
+        AppError(err)
+    }
+}
+
+impl IntoResponse for AppError {
+    fn into_response(self) -> axum::response::Response {
+        error!("{}", self.0);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "Something has gone wrong.",
+        )
+            .into_response()
+    }
+}
+
+pub struct SharedState {
+    pub tera: Tera,
+}
 
 async fn shutdown_handler() {
     let mut signal = tokio::signal::unix::signal(SignalKind::terminate())

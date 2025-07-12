@@ -1,7 +1,7 @@
 pub mod home;
 pub mod sitemap;
 
-use crate::types::{AppError, SharedState};
+use crate::{AppError, SharedState};
 use anyhow::{Context, Result, anyhow};
 use axum::{
     extract::{Path, State},

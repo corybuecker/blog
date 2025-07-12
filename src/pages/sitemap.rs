@@ -1,4 +1,4 @@
-use crate::types::AppError;
+use crate::AppError;
 use anyhow::{Context, anyhow};
 use axum::http::{StatusCode, header};
 use axum::{body::Body, http::HeaderValue, response::IntoResponse};
