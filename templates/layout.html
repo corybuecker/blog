@@ -8,7 +8,7 @@
     {% if description %}
     <meta name="description" content="{{ description }}" />
     {% endif %}
-    <title>{{ title }}</title>
+    <title>{{ title }} &middot; Cory Buecker</title>
     <link rel="stylesheet" href="{{ digest_asset(file="app.css") | safe }}">
     <link rel="icon" type="image/svg+xml" href="{{ digest_asset(file="favicon.svg") | safe }}">
     <link rel="apple-touch-icon" href="{{ digest_asset(file="favicon.svg") | safe }}">
@@ -45,11 +45,6 @@
         </main>
     </div>
     <script type="module" src="{{ digest_asset(file="app.js") | safe }}"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/dark.min.css">
-    <script type="module">
-        import hljs from 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/es/highlight.min.js';
-        hljs.highlightAll();
-    </script>
 </body>
 
 </html>

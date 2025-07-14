@@ -30,8 +30,7 @@ pub async fn build_response(
 
     let description = published_page.frontmatter.description.clone();
     let published_at = published_page.published_at;
-    let mut title = published_page.frontmatter.title.clone();
-    title.push_str(" - Cory Buecker");
+    let title = published_page.frontmatter.title.clone();
     let revised_at = published_page.frontmatter.revised_at;
 
     let mut pages: VecDeque<Link> = published_pages
@@ -149,7 +148,7 @@ mod tests {
         let body_string = execute_request_and_get_body(state).await;
 
         // Check that the home page title is rendered with the suffix
-        assert!(body_string.contains("Home - Cory Buecker"));
+        assert!(body_string.contains("Home"));
 
         // Check that the home page description is included
         assert!(body_string.contains("Home page description"));
@@ -173,7 +172,7 @@ mod tests {
         let state = create_shared_state(pages);
         let body_string = execute_request_and_get_body(state).await;
 
-        assert!(body_string.contains("Revised Page - Cory Buecker"));
+        assert!(body_string.contains("Revised Page"));
     }
 
     #[tokio::test]
@@ -197,6 +196,6 @@ mod tests {
         let body_string = execute_request_and_get_body(state).await;
 
         // With only one page, the pages list should be empty after pop_front()
-        assert!(body_string.contains("Single Page - Cory Buecker"));
+        assert!(body_string.contains("Single Page"));
     }
 }
