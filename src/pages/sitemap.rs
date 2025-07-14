@@ -106,6 +106,13 @@ mod tests {
             let pages = self.pages.clone();
             Box::pin(async move { Ok(pages) })
         }
+
+        fn read_content<'f>(
+            &'f self,
+            _path: &'f str,
+        ) -> Pin<Box<dyn Future<Output = Result<String>> + Send + Sync + 'f>> {
+            Box::pin(async move { Ok("this is the page content".to_string()) })
+        }
     }
 
     fn setup_tera() -> Tera {

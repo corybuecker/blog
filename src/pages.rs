@@ -33,6 +33,11 @@ pub trait PublishedPagesBuilder: Send + Sync {
     fn fetch<'f>(
         &'f self,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<PublishedPage>>> + Send + Sync + 'f>>;
+
+    fn read_content<'f>(
+        &'f self,
+        path: &'f str,
+    ) -> Pin<Box<dyn Future<Output = Result<String>> + Send + Sync + 'f>>;
 }
 
 impl PublishedPagesBuilder for PublishedPages {
@@ -41,6 +46,22 @@ impl PublishedPagesBuilder for PublishedPages {
     ) -> Pin<Box<dyn Future<Output = Result<Vec<PublishedPage>>> + Send + Sync + 'f>> {
         Box::pin(published_pages())
     }
+
+    fn read_content<'f>(
+        &'f self,
+        path: &'f str,
+    ) -> Pin<Box<dyn Future<Output = Result<String>> + Send + Sync + 'f>> {
+        Box::pin(read_content_from_path(path))
+    }
+}
+
+#[instrument]
+async fn read_content_from_path(path: &str) -> Result<String> {
+    let content = fs::read(path)
+        .await
+        .map_err(|e| anyhow!("could not read file: {}", e))?;
+
+    String::from_utf8(content).map_err(|e| anyhow!("could not read file: {}", e))
 }
 
 impl Frontmatter {
