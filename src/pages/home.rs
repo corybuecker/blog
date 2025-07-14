@@ -22,7 +22,12 @@ pub async fn build_response(
         .first()
         .ok_or(anyhow!("could not get homepage"))?;
 
-    let content = without_frontmatter(&published_page.path).await?;
+    let content = shared_state
+        .published_pages
+        .read_content(&published_page.path.to_string())
+        .await?;
+    let content = without_frontmatter(&content).await?;
+
     let description = published_page.frontmatter.description.clone();
     let published_at = published_page.published_at;
     let mut title = published_page.frontmatter.title.clone();
@@ -77,6 +82,13 @@ mod tests {
         ) -> Pin<Box<dyn Future<Output = Result<Vec<PublishedPage>>> + Send + Sync + 'f>> {
             let pages = self.pages.clone();
             Box::pin(async move { Ok(pages) })
+        }
+
+        fn read_content<'f>(
+            &'f self,
+            _path: &'f str,
+        ) -> Pin<Box<dyn Future<Output = Result<String>> + Send + Sync + 'f>> {
+            Box::pin(async move { Ok("this is the page content".to_string()) })
         }
     }
 

@@ -20,7 +20,12 @@ pub async fn build_response(
         .find(|f| f.frontmatter.slug == slug)
         .ok_or(anyhow!("could not find page"))?;
 
-    let content = without_frontmatter(&published_page.path).await?;
+    let content = state
+        .published_pages
+        .read_content(&published_page.path)
+        .await?;
+    let content = without_frontmatter(&content).await?;
+
     let description = published_page.frontmatter.description.clone();
     let published_at = published_page.published_at;
     let revised_at = published_page.frontmatter.revised_at;
@@ -75,6 +80,13 @@ mod tests {
         ) -> Pin<Box<dyn Future<Output = Result<Vec<PublishedPage>>> + Send + Sync + 'f>> {
             let pages = self.pages.clone();
             Box::pin(async move { Ok(pages) })
+        }
+
+        fn read_content<'f>(
+            &'f self,
+            _path: &'f str,
+        ) -> Pin<Box<dyn Future<Output = Result<String>> + Send + Sync + 'f>> {
+            Box::pin(async move { Ok("this is the page content".to_string()) })
         }
     }
 
