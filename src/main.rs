@@ -102,7 +102,7 @@ async fn main() {
         .unwrap();
 
     let mut published_pages = PublishedPages::default();
-    published_pages.publish().await.unwrap();
+    published_pages.publish().await.expect("Failed to publish pages during application startup");
 
     let shared_state = Arc::new(SharedState {
         tera,
