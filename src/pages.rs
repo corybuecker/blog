@@ -33,27 +33,42 @@ pub struct Frontmatter {
     pub title: String,
 }
 
-pub struct PublishedPages;
+#[derive(Default)]
+pub struct PublishedPages {
+    pages: Vec<PublishedPage>,
+}
 
-pub trait PublishedPagesBuilder: Send + Sync {
-    fn fetch<'f>(
-        &'f self,
-    ) -> Pin<Box<dyn Future<Output = Result<Vec<PublishedPage>>> + Send + Sync + 'f>>;
+pub trait PublicationManager: Send + Sync {
+    fn get_all(&self) -> Result<Vec<PublishedPage>>;
 
-    fn read_content<'f>(
+    fn publish<'f>(&'f mut self)
+    -> Pin<Box<dyn Future<Output = Result<usize>> + Send + Sync + 'f>>;
+
+    fn read<'f>(
         &'f self,
         path: &'f str,
     ) -> Pin<Box<dyn Future<Output = Result<String>> + Send + Sync + 'f>>;
 }
 
-impl PublishedPagesBuilder for PublishedPages {
-    fn fetch<'f>(
-        &'f self,
-    ) -> Pin<Box<dyn Future<Output = Result<Vec<PublishedPage>>> + Send + Sync + 'f>> {
-        Box::pin(published_pages())
+impl PublicationManager for PublishedPages {
+    fn get_all(&self) -> Result<Vec<PublishedPage>> {
+        Ok(self.pages.clone())
     }
 
-    fn read_content<'f>(
+    fn publish<'f>(
+        &'f mut self,
+    ) -> Pin<Box<dyn Future<Output = Result<usize>> + Send + Sync + 'f>> {
+        Box::pin(async {
+            let published_pages = published_pages().await?;
+            let length = published_pages.len();
+
+            self.pages = published_pages;
+
+            Ok(length)
+        })
+    }
+
+    fn read<'f>(
         &'f self,
         path: &'f str,
     ) -> Pin<Box<dyn Future<Output = Result<String>> + Send + Sync + 'f>> {
