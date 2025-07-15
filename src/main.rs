@@ -6,7 +6,7 @@ use axum::{
     response::IntoResponse,
     routing::get,
 };
-use pages::{PublishedPages, PublishedPagesBuilder};
+use pages::{PublicationManager, PublishedPages};
 use rust_web_common::telemetry::TelemetryBuilder;
 use std::sync::Arc;
 use tera::Tera;
@@ -40,7 +40,7 @@ impl IntoResponse for AppError {
 
 pub struct SharedState {
     pub tera: Tera,
-    pub published_pages: Box<dyn PublishedPagesBuilder>,
+    pub published_pages: Box<dyn PublicationManager>,
 }
 
 async fn shutdown_handler() {
@@ -101,9 +101,12 @@ async fn main() {
         .map_err(|e| anyhow::anyhow!("Failed to embed templates: {}", e))
         .unwrap();
 
+    let mut published_pages = PublishedPages::default();
+    published_pages.publish().await.unwrap();
+
     let shared_state = Arc::new(SharedState {
         tera,
-        published_pages: Box::new(PublishedPages),
+        published_pages: Box::new(published_pages),
     });
 
     select! {

@@ -17,14 +17,14 @@ pub async fn build_response(
     let tera = &shared_state.tera;
     let mut context = tera::Context::new();
 
-    let published_pages = shared_state.published_pages.fetch().await?;
+    let published_pages = shared_state.published_pages.get_all()?;
     let published_page = published_pages
         .first()
         .ok_or(anyhow!("could not get homepage"))?;
 
     let content = shared_state
         .published_pages
-        .read_content(&published_page.path.to_string())
+        .read(&published_page.path.to_string())
         .await?;
     let content = without_frontmatter(&content).await?;
 
@@ -62,7 +62,7 @@ mod tests {
     use super::build_response;
     use crate::{
         SharedState,
-        pages::{Frontmatter, PublishedPage, PublishedPagesBuilder},
+        pages::{Frontmatter, PublicationManager, PublishedPage},
         utilities::tera::{digest_asset, embed_templates},
     };
     use anyhow::Result;
@@ -75,15 +75,18 @@ mod tests {
         pages: Vec<PublishedPage>,
     }
 
-    impl PublishedPagesBuilder for MockPublishedPages {
-        fn fetch<'f>(
-            &'f self,
-        ) -> Pin<Box<dyn Future<Output = Result<Vec<PublishedPage>>> + Send + Sync + 'f>> {
-            let pages = self.pages.clone();
-            Box::pin(async move { Ok(pages) })
+    impl PublicationManager for MockPublishedPages {
+        fn get_all(&self) -> Result<Vec<PublishedPage>> {
+            Ok(self.pages.clone())
         }
 
-        fn read_content<'f>(
+        fn publish<'f>(
+            &'f mut self,
+        ) -> Pin<Box<dyn Future<Output = Result<usize>> + Send + Sync + 'f>> {
+            Box::pin(async move { Ok(self.pages.len()) })
+        }
+
+        fn read<'f>(
             &'f self,
             _path: &'f str,
         ) -> Pin<Box<dyn Future<Output = Result<String>> + Send + Sync + 'f>> {
