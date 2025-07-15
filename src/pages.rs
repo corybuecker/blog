@@ -4,9 +4,15 @@ pub mod sitemap;
 
 use anyhow::{Context, Result, anyhow};
 use chrono::{DateTime, Utc};
-use comrak::{Arena, Options, nodes::NodeValue, parse_document};
+use comrak::{
+    Arena, Options, Plugins, adapters::SyntaxHighlighterAdapter, nodes::NodeValue, parse_document,
+};
 use serde::Serialize;
-use std::{collections::HashMap, pin::Pin};
+use std::{
+    collections::HashMap,
+    io::{self, Write},
+    pin::Pin,
+};
 use tokio::fs::{self, read_dir};
 use tracing::instrument;
 
@@ -138,6 +144,10 @@ async fn without_frontmatter(content: &str) -> Result<String> {
     let arena = Arena::new();
     let mut options = Options::default();
     options.extension.front_matter_delimiter = Some(String::from("---"));
+
+    let mut plugins = Plugins::default();
+    plugins.render.codefence_syntax_highlighter = Some(&(SyntaxAdapter {}));
+
     let nodes = parse_document(&arena, content, &options);
 
     for node in nodes.descendants() {
@@ -147,7 +157,7 @@ async fn without_frontmatter(content: &str) -> Result<String> {
     }
 
     let mut html = Vec::new();
-    comrak::format_html(nodes, &options, &mut html)?;
+    comrak::format_html_with_plugins(nodes, &options, &mut html, &plugins)?;
     Ok(String::from_utf8(html)?)
 }
 
@@ -185,4 +195,46 @@ async fn published_pages() -> Result<Vec<PublishedPage>> {
     });
 
     Ok(published_pages)
+}
+
+#[derive(Debug, Copy, Clone)]
+pub struct SyntaxAdapter;
+
+impl SyntaxHighlighterAdapter for SyntaxAdapter {
+    fn write_highlighted(
+        &self,
+        output: &mut dyn Write,
+        _lang: Option<&str>,
+        code: &str,
+    ) -> io::Result<()> {
+        write!(output, "{code}")
+    }
+
+    fn write_pre_tag(
+        &self,
+        output: &mut dyn Write,
+        attributes: HashMap<String, String>,
+    ) -> io::Result<()> {
+        if attributes.contains_key("lang") {
+            write!(
+                output,
+                "<pre class=\"not-prose\" lang=\"{}\">",
+                attributes["lang"]
+            )
+        } else {
+            output.write_all(b"<pre class=\"not-prose\">")
+        }
+    }
+
+    fn write_code_tag(
+        &self,
+        output: &mut dyn Write,
+        attributes: HashMap<String, String>,
+    ) -> io::Result<()> {
+        if attributes.contains_key("class") {
+            write!(output, "<code class=\"{}\">", attributes["class"])
+        } else {
+            output.write_all(b"<code>")
+        }
+    }
 }

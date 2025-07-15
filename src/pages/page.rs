@@ -29,8 +29,7 @@ pub async fn build_response(
     let description = published_page.frontmatter.description.clone();
     let published_at = published_page.published_at;
     let revised_at = published_page.frontmatter.revised_at;
-    let mut title = published_page.frontmatter.title.clone();
-    title.push_str(" - Cory Buecker");
+    let title = published_page.frontmatter.title.clone();
 
     context.insert("content", &content);
     context.insert("description", &description);
@@ -164,7 +163,7 @@ mod tests {
         let state = create_shared_state(pages);
         let body_string = execute_request_and_get_body("revised-page", state).await;
 
-        assert!(body_string.contains("Revised Page - Cory Buecker"));
+        assert!(body_string.contains("Revised Page"));
         assert!(body_string.contains("Revised page description"));
     }
 
@@ -197,7 +196,7 @@ mod tests {
         let state = create_shared_state(pages);
         let body_string = execute_request_and_get_body("title-test", state).await;
 
-        assert!(body_string.contains("My Great Article - Cory Buecker"));
+        assert!(body_string.contains("My Great Article"));
     }
 
     #[tokio::test]
@@ -212,7 +211,7 @@ mod tests {
         let body_string = execute_request_and_get_body("page2", state).await;
 
         // Should contain the correct page content
-        assert!(body_string.contains("Page 2 - Cory Buecker"));
+        assert!(body_string.contains("Page 2"));
         assert!(body_string.contains("Page 2 description"));
         // Should not contain other pages
         assert!(!body_string.contains("Page 1 description"));

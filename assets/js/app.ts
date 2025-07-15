@@ -1,3 +1,12 @@
+import Prism from "prismjs";
+import "prismjs/components/prism-bash";
+import "prismjs/components/prism-yaml";
+import "prismjs/components/prism-javascript";
+import "prismjs/components/prism-docker";
+import "prismjs/components/prism-nginx";
+import "prismjs/components/prism-elixir";
+import "prismjs/components/prism-css";
+
 const localizeTimeElements = () => {
   const timeElements: HTMLCollectionOf<HTMLTimeElement> =
     document.getElementsByTagName("time");
@@ -9,4 +18,5 @@ const localizeTimeElements = () => {
 
 window.addEventListener("DOMContentLoaded", () => {
   localizeTimeElements();
+  Prism.highlightAll(false);
 });
