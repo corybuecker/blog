@@ -90,9 +90,16 @@ async fn metrics(request: Request, next: Next) -> impl IntoResponse {
 
 #[tokio::main]
 async fn main() {
-    let _telemetry_providers = TelemetryBuilder::new("blog".to_string())
-        .build()
-        .expect("failed to initialize telemetry");
+    let mut telemetry = TelemetryBuilder::new("blog".to_string());
+    telemetry
+        .init_subscriber()
+        .expect("could not initialize subscriber");
+    telemetry
+        .init_tracing()
+        .expect("could not initialize tracing");
+    telemetry
+        .init_metering()
+        .expect("could not initialize metering");
 
     let mut tera = Tera::default();
 
@@ -102,7 +109,10 @@ async fn main() {
         .unwrap();
 
     let mut published_pages = PublishedPages::default();
-    published_pages.publish().await.expect("Failed to publish pages during application startup");
+    published_pages
+        .publish()
+        .await
+        .expect("Failed to publish pages during application startup");
 
     let shared_state = Arc::new(SharedState {
         tera,
