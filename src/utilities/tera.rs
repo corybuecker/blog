@@ -36,7 +36,6 @@ pub fn digest_asset() -> impl Function {
 
 pub async fn embed_templates(tera: &mut Tera) -> Result<()> {
     let mut directory_stack = VecDeque::from(["./templates".to_string()]);
-    let _templates: Vec<String> = Vec::new();
 
     while let Some(entry) = directory_stack.pop_front() {
         let mut entries = fs::read_dir(&entry).await?;
