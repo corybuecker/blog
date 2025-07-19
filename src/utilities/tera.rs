@@ -43,7 +43,23 @@ pub async fn embed_templates(tera: &mut Tera) -> Result<()> {
         while let Some(entry) = entries.next_entry().await? {
             if entry.file_type().await?.is_file() {
                 let path = entry.path();
-                let file_name = path.file_name().unwrap().to_str().unwrap();
+                let file_name = match path.file_name() {
+                    Some(name) => match name.to_str() {
+                        Some(valid_name) => valid_name,
+                        None => {
+                            return Err(anyhow::anyhow!(
+                                "Failed to convert file name to string: {:?}",
+                                name
+                            ));
+                        }
+                    },
+                    None => {
+                        return Err(anyhow::anyhow!(
+                            "Failed to extract file name from path: {:?}",
+                            path
+                        ));
+                    }
+                };
                 debug!("tera file name: {:?}", file_name);
                 let content = fs::read_to_string(&path).await?;
                 tera.add_raw_template(file_name, &content)?;
