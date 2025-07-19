@@ -35,7 +35,7 @@ pub async fn build_response(
     context.insert("revised_at", &revised_at);
 
     let rendered = tera
-        .render("pages/page.html", &context)
+        .render("page.html", &context)
         .map_err(|e| anyhow!("could not render template: {e}"))?;
 
     Ok(Html(rendered))
@@ -89,15 +89,15 @@ mod tests {
         }
     }
 
-    fn setup_tera() -> Tera {
+    async fn setup_tera() -> Tera {
         let mut tera = Tera::default();
         tera.register_function("digest_asset", digest_asset());
-        embed_templates(&mut tera).unwrap();
+        embed_templates(&mut tera).await.unwrap();
         tera
     }
 
-    fn create_shared_state(pages: Vec<PublishedPage>) -> Arc<SharedState> {
-        let tera = setup_tera();
+    async fn create_shared_state(pages: Vec<PublishedPage>) -> Arc<SharedState> {
+        let tera = setup_tera().await;
         let mock_pages = MockPublishedPages { pages };
         Arc::new(SharedState {
             tera,
@@ -141,7 +141,7 @@ mod tests {
     #[tokio::test]
     async fn test_valid_response() {
         let pages = vec![create_page("test", "test", "Test", "test", None)];
-        let state = create_shared_state(pages);
+        let state = create_shared_state(pages).await;
         let body_string = execute_request_and_get_body("test", state).await;
 
         assert!(body_string.contains("Test"));
@@ -160,7 +160,7 @@ mod tests {
             Some(revised_date),
         )];
 
-        let state = create_shared_state(pages);
+        let state = create_shared_state(pages).await;
         let body_string = execute_request_and_get_body("revised-page", state).await;
 
         assert!(body_string.contains("Revised Page"));
@@ -176,7 +176,7 @@ mod tests {
             "Existing page",
             None,
         )];
-        let state = create_shared_state(pages);
+        let state = create_shared_state(pages).await;
         let path = Path("non-existent".to_string());
 
         let result = build_response(path, State(state)).await;
@@ -193,7 +193,7 @@ mod tests {
             None,
         )];
 
-        let state = create_shared_state(pages);
+        let state = create_shared_state(pages).await;
         let body_string = execute_request_and_get_body("title-test", state).await;
 
         assert!(body_string.contains("My Great Article"));
@@ -207,7 +207,7 @@ mod tests {
             create_page("test-page3", "page3", "Page 3", "Page 3 description", None),
         ];
 
-        let state = create_shared_state(pages);
+        let state = create_shared_state(pages).await;
         let body_string = execute_request_and_get_body("page2", state).await;
 
         // Should contain the correct page content
@@ -220,7 +220,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_build_response_empty_pages_list() {
-        let state = create_shared_state(vec![]);
+        let state = create_shared_state(vec![]).await;
         let path = Path("any-slug".to_string());
 
         let result = build_response(path, State(state)).await;

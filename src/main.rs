@@ -105,6 +105,7 @@ async fn main() {
 
     tera.register_function("digest_asset", digest_asset());
     embed_templates(&mut tera)
+        .await
         .map_err(|e| anyhow::anyhow!("Failed to embed templates: {}", e))
         .unwrap();
 
