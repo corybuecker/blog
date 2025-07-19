@@ -115,20 +115,20 @@ Kubernetes manifests are available in the `k8s/` directory for production deploy
 ## Project Structure
 
 ```
-├── src/                  # Rust source code
-│   ├── main.rs          # Application entry point
-│   ├── pages/           # Page handlers
-│   └── utilities/       # Utility functions
-├── assets/              # Frontend source
-│   ├── css/            # TailwindCSS styles
-│   ├── js/             # TypeScript code
-│   └── package.json    # Node.js dependencies
+├── src/                # Rust source code
+│   ├── main.rs           # Application entry point
+│   ├── pages/            # Page handlers
+│   └── utilities/        # Utility functions
+├── assets/             # Frontend source
+│   ├── css/              # TailwindCSS styles
+│   ├── js/               # TypeScript code
+│   └── package.json      # Node.js dependencies
 ├── content/            # Markdown blog posts
 ├── templates/          # Tera HTML templates
-├── static/            # Static assets
-├── k8s/               # Kubernetes manifests
-├── dev/               # Development services
-└── Dockerfile         # Multi-stage Docker build
+├── static/             # Static assets
+├── k8s/                # Kubernetes manifests
+├── dev/                # Development services
+└── Dockerfile          # Multi-stage Docker build
 ```
 
 ## License
