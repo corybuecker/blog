@@ -118,15 +118,15 @@ mod tests {
         }
     }
 
-    fn setup_tera() -> Tera {
+    async fn setup_tera() -> Tera {
         let mut tera = Tera::default();
         tera.register_function("digest_asset", digest_asset());
-        embed_templates(&mut tera).unwrap();
+        embed_templates(&mut tera).await.unwrap();
         tera
     }
 
-    fn create_shared_state(pages: Vec<PublishedPage>) -> Arc<SharedState> {
-        let tera = setup_tera();
+    async fn create_shared_state(pages: Vec<PublishedPage>) -> Arc<SharedState> {
+        let tera = setup_tera().await;
         let mock_pages = MockPublishedPages { pages };
         Arc::new(SharedState {
             tera,
@@ -194,7 +194,7 @@ mod tests {
             ),
         ];
 
-        let state = create_shared_state(pages);
+        let state = create_shared_state(pages).await;
         let (body_string, status) = execute_request_and_get_body(state).await;
 
         // Check status
@@ -234,7 +234,7 @@ mod tests {
             Some(revised_date),
         )];
 
-        let state = create_shared_state(pages);
+        let state = create_shared_state(pages).await;
         let (body_string, _) = execute_request_and_get_body(state).await;
 
         // Should use the revised date, not the published date
@@ -257,7 +257,7 @@ mod tests {
             None,
         )];
 
-        let state = create_shared_state(pages);
+        let state = create_shared_state(pages).await;
         let (body_string, _) = execute_request_and_get_body(state).await;
 
         // Should use the published date
@@ -279,7 +279,7 @@ mod tests {
             },
         }];
 
-        let state = create_shared_state(pages);
+        let state = create_shared_state(pages).await;
         let (body_string, _) = execute_request_and_get_body(state).await;
 
         // Should contain some valid RFC3339 timestamp (current time)
@@ -289,7 +289,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_build_response_empty_pages() {
-        let state = create_shared_state(vec![]);
+        let state = create_shared_state(vec![]).await;
         let (body_string, _) = execute_request_and_get_body(state).await;
 
         // Should still be valid XML with empty urlset
@@ -329,7 +329,7 @@ mod tests {
             ),
         ];
 
-        let state = create_shared_state(pages);
+        let state = create_shared_state(pages).await;
         let (body_string, _) = execute_request_and_get_body(state).await;
 
         // First page should be homepage
