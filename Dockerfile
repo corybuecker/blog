@@ -10,13 +10,15 @@ RUN cargo build --release
 RUN cp /build/target/release/blog /build/blog
 
 FROM node@sha256:e7db48bc35ee8d2e8d1511dfe779d78076966bd101ab074ea2858da8d59efb7f AS frontend_builder
-RUN mkdir -p /static
-COPY assets /assets
+RUN mkdir -p /assets
+COPY package.json package-lock.json /assets/
+COPY css /assets/css
+COPY js /assets/js
 COPY templates /assets/templates
 WORKDIR /assets
 RUN npm install
 RUN npx tailwindcss -i css/app.css -o app.css
-RUN npx esbuild --bundle js/app.ts --format=esm > app.js
+RUN npx esbuild --sourcemap --bundle --format=esm --outdir=/assets js/app.ts
 
 FROM debian@sha256:d42b86d7e24d78a33edcf1ef4f65a20e34acb1e1abd53cabc3f7cdf769fc4082
 RUN mkdir -p /opt/blog
@@ -25,6 +27,6 @@ COPY --from=backend_builder /build/blog /opt/blog/
 COPY static /opt/blog/static
 COPY content /opt/blog/content
 COPY templates /opt/blog/templates
-COPY --from=frontend_builder /assets/app.css /assets/app.js /opt/blog/static/
+COPY --from=frontend_builder /assets/app.css /assets/app.js /assets/app.js.map /opt/blog/static/
 USER 1000
 ENTRYPOINT ["/opt/blog/blog"]

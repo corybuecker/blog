@@ -10,9 +10,9 @@ use pages::{PublicationManager, PublishedPages};
 use rust_web_common::telemetry::TelemetryBuilder;
 use std::sync::Arc;
 use tera::Tera;
-use tokio::{select, signal::unix::SignalKind};
+use tokio::{join, process::Command, select, signal::unix::SignalKind, spawn};
 use tower_http::{services::ServeDir, trace::TraceLayer};
-use tracing::{error, info};
+use tracing::{Instrument, debug, error, info, info_span, instrument};
 use utilities::tera::{digest_asset, embed_templates};
 
 mod pages;
@@ -101,6 +101,8 @@ async fn main() {
         .init_metering()
         .expect("could not initialize metering");
 
+    spawn(compile_assets());
+
     let mut tera = Tera::default();
 
     tera.register_function("digest_asset", digest_asset());
@@ -124,4 +126,33 @@ async fn main() {
         _ = shutdown_handler() => {}
         _ = server_handler(shared_state.clone()) => {}
     }
+}
+
+#[instrument]
+async fn compile_assets() {
+    let css_command = Command::new("npx")
+        .arg("tailwindcss")
+        .arg("--minify")
+        .arg("--input")
+        .arg("css/app.css")
+        .arg("--output")
+        .arg("static/app.css")
+        .output()
+        .instrument(info_span!("compile css"));
+
+    let js_command = Command::new("npx")
+        .arg("esbuild")
+        .arg("--bundle")
+        .arg("--outdir=static")
+        .arg("--sourcemap")
+        .arg("--minify")
+        .arg("--format=esm")
+        .arg("js/app.ts")
+        .output()
+        .instrument(info_span!("compile js"));
+
+    let (output_1, output_2) = join!(css_command, js_command);
+
+    debug!("{:#?}", output_1);
+    debug!("{:#?}", output_2);
 }
