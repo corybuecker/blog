@@ -66,7 +66,7 @@ async fn secure_headers(request: Request, next: Next) -> impl IntoResponse {
     headers.insert(
         CONTENT_SECURITY_POLICY,
         HeaderValue::from_static(
-            "default-src 'none'; style-src 'self'; script-src 'self'; img-src 'self';",
+            "default-src 'none'; style-src 'self'; script-src 'self'; img-src 'self'; frame-ancestors 'none'; require-trusted-types-for 'script'",
         ),
     );
 

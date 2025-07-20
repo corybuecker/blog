@@ -4,13 +4,14 @@ kind: Kustomization
 images:
   - name: blog
     newName: ghcr.io/corybuecker/blog
-    digest: sha256:bbd39269bbba7c00abf1c09e07022cf807ea743b7d7442e4a83c0d88b308fdc7
+    digest: sha256:faf199c049792c6868af21a8e55dbaa71ac454c31162908b5c9b6e1b95ae2592
 
 resources:
   - namespace.yaml
   - deployment.yaml
   - service.yaml
   - httproute.yaml
+  - pod_disruption_budget.yaml
 
 configMapGenerator:
   - name: blog
