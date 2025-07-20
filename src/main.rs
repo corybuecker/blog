@@ -1,7 +1,7 @@
 use axum::{
     Router,
     extract::Request,
-    http::StatusCode,
+    http::{HeaderValue, StatusCode},
     middleware::{Next, from_fn},
     response::IntoResponse,
     routing::get,
@@ -17,6 +17,8 @@ use utilities::tera::{digest_asset, embed_templates};
 
 mod pages;
 mod utilities;
+
+const CROSS_ORIGIN_OPENER_POLICY: &str = "Cross-Origin-Opener-Policy";
 
 #[derive(Debug)]
 pub struct AppError(anyhow::Error);
@@ -50,6 +52,19 @@ async fn shutdown_handler() {
     signal.recv().await;
 }
 
+async fn secure_headers(request: Request, next: Next) -> impl IntoResponse {
+    let mut response = next.run(request).await;
+    let headers = response.headers_mut();
+
+    headers.remove(CROSS_ORIGIN_OPENER_POLICY);
+    headers.append(
+        CROSS_ORIGIN_OPENER_POLICY,
+        HeaderValue::from_static("same-origin"),
+    );
+
+    response
+}
+
 async fn server_handler(state: Arc<SharedState>) {
     let app = Router::new()
         .route("/", get(pages::home::build_response))
@@ -64,6 +79,7 @@ async fn server_handler(state: Arc<SharedState>) {
         .with_state(state.clone())
         .layer(TraceLayer::new_for_http())
         .layer(from_fn(metrics))
+        .layer(from_fn(secure_headers))
         .route("/healthcheck", get(StatusCode::OK));
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:8000").await.unwrap();
