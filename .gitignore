@@ -2,5 +2,7 @@
 /assets/node_modules
 /static/*.css
 /static/*.js
+/static/*.js.map
 .env
 .rules
+/node_modules
