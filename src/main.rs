@@ -3,7 +3,7 @@ use axum::{
     extract::Request,
     http::{HeaderValue, StatusCode, header::CONTENT_SECURITY_POLICY},
     middleware::{Next, from_fn},
-    response::IntoResponse,
+    response::{Html, IntoResponse},
     routing::get,
 };
 use pages::{PublicationManager, PublishedPages};
@@ -21,22 +21,50 @@ mod utilities;
 const CROSS_ORIGIN_OPENER_POLICY: &str = "Cross-Origin-Opener-Policy";
 
 #[derive(Debug)]
-pub struct AppError(anyhow::Error);
+pub enum AppError {
+    PageNotFound,
+    Unknown(anyhow::Error),
+}
 
 impl From<anyhow::Error> for AppError {
     fn from(err: anyhow::Error) -> Self {
-        AppError(err)
+        AppError::Unknown(err)
     }
 }
 
 impl IntoResponse for AppError {
     fn into_response(self) -> axum::response::Response {
-        error!("{}", self.0);
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            "Something has gone wrong.",
-        )
-            .into_response()
+        match self {
+            AppError::PageNotFound => match Tera::new("./templates/errors/*.html") {
+                Ok(tera) => match tera.render("404.html", &tera::Context::new()) {
+                    Ok(content) => (StatusCode::NOT_FOUND, Html::from(content)).into_response(),
+                    Err(err) => {
+                        error!("Failed to render 404 template: {}", err);
+                        (
+                            StatusCode::INTERNAL_SERVER_ERROR,
+                            "Something has gone wrong.",
+                        )
+                            .into_response()
+                    }
+                },
+                Err(err) => {
+                    error!("Failed to load 404 template: {}", err);
+                    (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        "Something has gone wrong.",
+                    )
+                        .into_response()
+                }
+            },
+            AppError::Unknown(err) => {
+                error!("Unknown error: {}", err);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Something has gone wrong.",
+                )
+                    .into_response()
+            }
+        }
     }
 }
 
@@ -85,9 +113,10 @@ async fn server_handler(state: Arc<SharedState>) {
             ServeDir::new("static/images").precompressed_gzip(),
         )
         .with_state(state.clone())
-        .layer(TraceLayer::new_for_http())
-        .layer(from_fn(metrics))
+        .fallback(|| async { Err::<StatusCode, AppError>(AppError::PageNotFound) })
         .layer(from_fn(secure_headers))
+        .layer(from_fn(metrics))
+        .layer(TraceLayer::new_for_http())
         .route("/healthcheck", get(StatusCode::OK));
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:8000").await.unwrap();
@@ -151,6 +180,7 @@ async fn main() {
 async fn compile_assets() {
     let css_command = Command::new("npx")
         .arg("tailwindcss")
+        .arg("--map")
         .arg("--input")
         .arg("css/app.css")
         .arg("--output")

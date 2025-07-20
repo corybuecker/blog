@@ -18,7 +18,7 @@ pub async fn build_response(
     let published_page = published_pages
         .iter()
         .find(|f| f.frontmatter.slug == slug)
-        .ok_or(anyhow!("could not find page"))?;
+        .ok_or(AppError::PageNotFound)?;
 
     let content = state.published_pages.read(&published_page.path).await?;
     let content = without_frontmatter(&content).await?;
