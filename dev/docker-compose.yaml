@@ -12,7 +12,3 @@ services:
     ports:
       - 16686:16686
       - 4318:4318
-  grafana:
-    image: grafana/grafana@sha256:52c3e20686b860c6dc1f623811565773cf51eefa378817a4896dfc863c3c82c8 # 11.6.1
-    ports:
-      - 3000:3000

@@ -17,8 +17,9 @@ COPY js /assets/js
 COPY templates /assets/templates
 WORKDIR /assets
 RUN npm install
-RUN npx tailwindcss -i css/app.css -o app.css
-RUN npx esbuild --sourcemap --bundle --format=esm --outdir=/assets js/app.ts
+RUN npx tailwindcss --minify --input css/app.css --output app.css
+RUN npx esbuild --sourcemap --minify --bundle --format=esm --outdir=/assets js/app.ts
+RUN gzip -k9 app.css app.js app.js.map
 
 FROM debian@sha256:d42b86d7e24d78a33edcf1ef4f65a20e34acb1e1abd53cabc3f7cdf769fc4082
 RUN mkdir -p /opt/blog
@@ -27,6 +28,6 @@ COPY --from=backend_builder /build/blog /opt/blog/
 COPY static /opt/blog/static
 COPY content /opt/blog/content
 COPY templates /opt/blog/templates
-COPY --from=frontend_builder /assets/app.css /assets/app.js /assets/app.js.map /opt/blog/static/
+COPY --from=frontend_builder /assets/app.css /assets/app.js /assets/app.js.map /assets/app.css.gz /assets/app.js.gz /assets/app.js.map.gz /opt/blog/static/
 USER 1000
 ENTRYPOINT ["/opt/blog/blog"]

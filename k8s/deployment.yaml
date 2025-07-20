@@ -23,7 +23,7 @@ spec:
             - name: http
               containerPort: 8000
           envFrom:
-            - secretRef:
+            - configMapRef:
                 name: blog
           resources:
             limits:
