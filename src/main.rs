@@ -1,7 +1,7 @@
 use axum::{
     Router,
     extract::Request,
-    http::{HeaderValue, StatusCode},
+    http::{HeaderValue, StatusCode, header::CONTENT_SECURITY_POLICY},
     middleware::{Next, from_fn},
     response::IntoResponse,
     routing::get,
@@ -57,9 +57,17 @@ async fn secure_headers(request: Request, next: Next) -> impl IntoResponse {
     let headers = response.headers_mut();
 
     headers.remove(CROSS_ORIGIN_OPENER_POLICY);
-    headers.append(
+    headers.insert(
         CROSS_ORIGIN_OPENER_POLICY,
         HeaderValue::from_static("same-origin"),
+    );
+
+    headers.remove(CONTENT_SECURITY_POLICY);
+    headers.insert(
+        CONTENT_SECURITY_POLICY,
+        HeaderValue::from_static(
+            "default-src 'none'; style-src 'self'; script-src 'self'; img-src 'self';",
+        ),
     );
 
     response
