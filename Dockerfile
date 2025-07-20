@@ -6,7 +6,6 @@ RUN echo "fn main(){}" > /build/src/main.rs
 RUN cargo build --release
 COPY src /build/src
 RUN touch /build/src/main.rs
-COPY templates /build/templates
 RUN cargo build --release
 RUN cp /build/target/release/blog /build/blog
 
@@ -25,6 +24,7 @@ WORKDIR /opt/blog
 COPY --from=backend_builder /build/blog /opt/blog/
 COPY static /opt/blog/static
 COPY content /opt/blog/content
+COPY templates /opt/blog/templates
 COPY --from=frontend_builder /assets/app.css /assets/app.js /opt/blog/static/
 USER 1000
 ENTRYPOINT ["/opt/blog/blog"]

@@ -1,10 +1,11 @@
 use anyhow::Result;
-use std::{collections::HashMap, time::SystemTime};
+use std::{
+    collections::{HashMap, VecDeque},
+    time::SystemTime,
+};
 use tera::{Function, Tera, Value};
-
-static LAYOUT_TEMPLATE: &str = include_str!("../../templates/layout.html");
-static PAGES_HOME_TEMPLATE: &str = include_str!("../../templates/pages/home.html");
-static PAGES_PAGE_TEMPLATE: &str = include_str!("../../templates/pages/page.html");
+use tokio::fs;
+use tracing::debug;
 
 pub fn digest_asset() -> impl Function {
     let key = SystemTime::now();
@@ -33,13 +34,24 @@ pub fn digest_asset() -> impl Function {
     }
 }
 
-pub fn embed_templates(tera: &mut Tera) -> Result<()> {
-    let templates = vec![
-        ("layout.html", LAYOUT_TEMPLATE),
-        ("pages/home.html", PAGES_HOME_TEMPLATE),
-        ("pages/page.html", PAGES_PAGE_TEMPLATE),
-    ];
-    tera.add_raw_templates(templates).unwrap();
+pub async fn embed_templates(tera: &mut Tera) -> Result<()> {
+    let mut directory_stack = VecDeque::from(["./templates".to_string()]);
+
+    while let Some(entry) = directory_stack.pop_front() {
+        let mut entries = fs::read_dir(&entry).await?;
+
+        while let Some(entry) = entries.next_entry().await? {
+            if entry.file_type().await?.is_file() {
+                let path = entry.path();
+                let file_name = path.file_name().unwrap().to_str().unwrap();
+                debug!("tera file name: {:?}", file_name);
+                let content = fs::read_to_string(&path).await?;
+                tera.add_raw_template(file_name, &content)?;
+            } else {
+                directory_stack.push_back(entry.path().to_string_lossy().to_string());
+            }
+        }
+    }
 
     Ok(())
 }
@@ -84,17 +96,17 @@ mod tests {
         assert!(result.is_err());
     }
 
-    #[test]
-    fn test_embed_templates_success() {
+    #[tokio::test]
+    async fn test_embed_templates_success() {
         let mut tera = Tera::default();
-        let result = embed_templates(&mut tera);
+        let result = embed_templates(&mut tera).await;
         assert!(result.is_ok());
     }
 
-    #[test]
-    fn test_embed_templates_loads_templates() {
+    #[tokio::test]
+    async fn test_embed_templates_loads_templates() {
         let mut tera = Tera::default();
-        embed_templates(&mut tera).unwrap();
+        embed_templates(&mut tera).await.unwrap();
 
         // Check that templates are accessible
         let template_names = tera.get_template_names().collect::<Vec<_>>();
@@ -102,16 +114,16 @@ mod tests {
 
         // Check for specific templates that should exist
         assert!(template_names.contains(&"layout.html"));
-        assert!(template_names.contains(&"pages/home.html"));
-        assert!(template_names.contains(&"pages/page.html"));
+        assert!(template_names.contains(&"home.html"));
+        assert!(template_names.contains(&"page.html"));
     }
 
-    #[test]
-    fn test_embed_templates_renders_correctly() {
+    #[tokio::test]
+    async fn test_embed_templates_renders_correctly() {
         let mut tera = Tera::default();
         tera.register_function("digest_asset", digest_asset());
 
-        embed_templates(&mut tera).unwrap();
+        embed_templates(&mut tera).await.unwrap();
 
         // Test that we can render a template (this assumes layout.html exists and is valid)
         let mut context = Context::new();
