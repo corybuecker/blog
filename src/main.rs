@@ -56,8 +56,11 @@ async fn server_handler(state: Arc<SharedState>) {
         .route("/post/{slug}/", get(pages::page::remove_slash))
         .route("/post/{slug}", get(pages::page::build_response))
         .route("/sitemap.xml", get(pages::sitemap::build_response))
-        .nest_service("/assets", ServeDir::new("static"))
-        .nest_service("/images", ServeDir::new("static/images"))
+        .nest_service("/assets", ServeDir::new("static").precompressed_gzip())
+        .nest_service(
+            "/images",
+            ServeDir::new("static/images").precompressed_gzip(),
+        )
         .with_state(state.clone())
         .layer(TraceLayer::new_for_http())
         .layer(from_fn(metrics))
@@ -91,15 +94,7 @@ async fn metrics(request: Request, next: Next) -> impl IntoResponse {
 #[tokio::main]
 async fn main() {
     let mut telemetry = TelemetryBuilder::new("blog".to_string());
-    telemetry
-        .init_subscriber()
-        .expect("could not initialize subscriber");
-    telemetry
-        .init_tracing()
-        .expect("could not initialize tracing");
-    telemetry
-        .init_metering()
-        .expect("could not initialize metering");
+    telemetry.init().expect("could not initialize subscriber");
 
     spawn(compile_assets());
 
@@ -132,7 +127,6 @@ async fn main() {
 async fn compile_assets() {
     let css_command = Command::new("npx")
         .arg("tailwindcss")
-        .arg("--minify")
         .arg("--input")
         .arg("css/app.css")
         .arg("--output")
@@ -145,7 +139,6 @@ async fn compile_assets() {
         .arg("--bundle")
         .arg("--outdir=static")
         .arg("--sourcemap")
-        .arg("--minify")
         .arg("--format=esm")
         .arg("js/app.ts")
         .output()
