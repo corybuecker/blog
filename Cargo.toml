@@ -4,7 +4,7 @@ version = "2.0.0"
 edition = "2024"
 
 [dependencies]
-anyhow = { version = "1.0.98" }
+anyhow = { version = "1.0.99" }
 axum = { version = "0.8.4" }
 chrono = { version = "0.4.41", features = ["serde"] }
 comrak = { version = "0.41.0" }
