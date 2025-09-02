@@ -9,7 +9,7 @@ RUN touch /build/src/main.rs
 RUN cargo build --release
 RUN cp /build/target/release/blog /build/blog
 
-FROM node@sha256:d2b6b5aedb5b729f68ee1129e0f5a5d4713d93f82448249e82241876d8e8d86e AS frontend_builder
+FROM node@sha256:701c8a634cb3ddbc1dc9584725937619716882525356f0989f11816ba3747a22 AS frontend_builder
 RUN mkdir -p /assets
 COPY package.json package-lock.json /assets/
 COPY css /assets/css
