@@ -8,11 +8,8 @@ use comrak::{
     Arena, Options, Plugins, adapters::SyntaxHighlighterAdapter, nodes::NodeValue, parse_document,
 };
 use serde::Serialize;
-use std::{
-    collections::HashMap,
-    io::{self, Write},
-    pin::Pin,
-};
+use std::fmt::{self, Write};
+use std::{collections::HashMap, pin::Pin};
 use tokio::fs::{self, read_dir};
 use tracing::instrument;
 
@@ -171,9 +168,9 @@ async fn without_frontmatter(content: &str) -> Result<String> {
         }
     }
 
-    let mut html = Vec::new();
+    let mut html = String::new();
     comrak::format_html_with_plugins(nodes, &options, &mut html, &plugins)?;
-    Ok(String::from_utf8(html)?)
+    Ok(html)
 }
 
 #[instrument]
@@ -221,15 +218,15 @@ impl SyntaxHighlighterAdapter for SyntaxAdapter {
         output: &mut dyn Write,
         _lang: Option<&str>,
         code: &str,
-    ) -> io::Result<()> {
-        write!(output, "{code}")
+    ) -> fmt::Result {
+        output.write_str(code)
     }
 
     fn write_pre_tag(
         &self,
         output: &mut dyn Write,
         attributes: HashMap<String, String>,
-    ) -> io::Result<()> {
+    ) -> fmt::Result {
         if attributes.contains_key("lang") {
             write!(
                 output,
@@ -237,7 +234,7 @@ impl SyntaxHighlighterAdapter for SyntaxAdapter {
                 attributes["lang"]
             )
         } else {
-            output.write_all(b"<pre class=\"not-prose\">")
+            output.write_str("<pre class=\"not-prose\">")
         }
     }
 
@@ -245,11 +242,11 @@ impl SyntaxHighlighterAdapter for SyntaxAdapter {
         &self,
         output: &mut dyn Write,
         attributes: HashMap<String, String>,
-    ) -> io::Result<()> {
+    ) -> fmt::Result {
         if attributes.contains_key("class") {
-            write!(output, "<code class=\"{}\">", attributes["class"])
+            output.write_str(&format!("<code class=\"{}\">", attributes["class"]))
         } else {
-            output.write_all(b"<code>")
+            output.write_str("<code>")
         }
     }
 }
