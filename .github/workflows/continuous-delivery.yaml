@@ -1,13 +1,17 @@
 name: continuous-delivery
+
 permissions:
   packages: write
+
 on:
   push:
     branches:
       - main
+
 concurrency:
   group: continuous-delivery
   cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-24.04-arm
