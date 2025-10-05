@@ -2,6 +2,7 @@ use super::without_frontmatter;
 use crate::{AppError, SharedState};
 use anyhow::anyhow;
 use axum::{extract::State, response::Html};
+use rust_web_common::templating::to_json;
 use serde::Serialize;
 use std::{collections::VecDeque, sync::Arc};
 
@@ -14,9 +15,7 @@ struct Link {
 pub async fn build_response(
     State(shared_state): State<Arc<SharedState>>,
 ) -> Result<Html<String>, AppError> {
-    let tera = &shared_state.tera;
-    let mut context = tera::Context::new();
-
+    let renderer = &shared_state.renderer;
     let published_pages = shared_state.published_pages.get_all()?;
     let published_page = published_pages
         .first()
@@ -43,15 +42,16 @@ pub async fn build_response(
 
     pages.pop_front();
 
-    context.insert("pages", &pages);
-    context.insert("content", &content);
-    context.insert("description", &description);
-    context.insert("title", &title);
-    context.insert("published_at", &published_at);
-    context.insert("revised_at", &revised_at);
+    renderer.insert("pages", to_json(pages))?;
+    renderer.insert("content", content)?;
+    renderer.insert("description", description)?;
+    renderer.insert("title", title)?;
+    renderer.insert("published_at", to_json(published_at))?;
+    renderer.insert("revised_at", to_json(revised_at))?;
+    renderer.insert("partial", "pages/home")?;
 
-    let rendered = tera
-        .render("home.html", &context)
+    let rendered = renderer
+        .render("layout")
         .map_err(|e| anyhow!("could not render template: {e}"))?;
 
     Ok(Html(rendered))
@@ -63,13 +63,12 @@ mod tests {
     use crate::{
         SharedState,
         pages::{Frontmatter, PublicationManager, PublishedPage},
-        utilities::tera::{digest_asset, embed_templates},
     };
     use anyhow::Result;
     use axum::{extract::State, response::IntoResponse};
     use chrono::{DateTime, Utc};
+    use rust_web_common::templating::Renderer;
     use std::{future::Future, pin::Pin, sync::Arc};
-    use tera::Tera;
 
     struct MockPublishedPages {
         pages: Vec<PublishedPage>,
@@ -94,18 +93,12 @@ mod tests {
         }
     }
 
-    async fn setup_tera() -> Tera {
-        let mut tera = Tera::default();
-        tera.register_function("digest_asset", digest_asset());
-        embed_templates(&mut tera).await.unwrap();
-        tera
-    }
-
     async fn create_shared_state(pages: Vec<PublishedPage>) -> Arc<SharedState> {
-        let tera = setup_tera().await;
         let mock_pages = MockPublishedPages { pages };
+        let renderer = Renderer::new("templates".to_string()).unwrap();
+
         Arc::new(SharedState {
-            tera,
+            renderer,
             published_pages: Box::new(mock_pages),
         })
     }

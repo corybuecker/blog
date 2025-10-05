@@ -1,0 +1,15 @@
+<article class="prose max-w-none pb-4">
+    <h1>{{title}}</h1>
+    <p>
+        <time datetime="{{published_at}}">
+            {{published_at}}
+        </time>
+        {{#if revised_at}}
+            (revised on
+            <time datetime="{{revised_at}}">
+                {{revised_at}}
+            </time>)
+        {{/if}}
+    </p>
+{{{content}}}
+</article>
