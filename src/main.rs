@@ -3,20 +3,20 @@ use axum::{
     extract::Request,
     http::{HeaderValue, StatusCode, header::CONTENT_SECURITY_POLICY},
     middleware::{Next, from_fn},
-    response::{Html, IntoResponse},
+    response::IntoResponse,
     routing::get,
 };
 use pages::{PublicationManager, PublishedPages};
-use rust_web_common::telemetry::TelemetryBuilder;
+use rust_web_common::{
+    telemetry::TelemetryBuilder,
+    templating::{Renderer, RendererError},
+};
 use std::sync::Arc;
-use tera::Tera;
 use tokio::{join, process::Command, select, signal::unix::SignalKind, spawn};
 use tower_http::{services::ServeDir, trace::TraceLayer};
 use tracing::{Instrument, debug, error, info, info_span, instrument};
-use utilities::tera::{digest_asset, embed_templates};
 
 mod pages;
-mod utilities;
 
 const CROSS_ORIGIN_OPENER_POLICY: &str = "Cross-Origin-Opener-Policy";
 
@@ -32,30 +32,21 @@ impl From<anyhow::Error> for AppError {
     }
 }
 
+impl From<RendererError> for AppError {
+    fn from(err: RendererError) -> Self {
+        error!("{:?}", err);
+        AppError::Unknown(err.into())
+    }
+}
+
 impl IntoResponse for AppError {
     fn into_response(self) -> axum::response::Response {
         match self {
-            AppError::PageNotFound => match Tera::new("./templates/errors/*.html") {
-                Ok(tera) => match tera.render("404.html", &tera::Context::new()) {
-                    Ok(content) => (StatusCode::NOT_FOUND, Html::from(content)).into_response(),
-                    Err(err) => {
-                        error!("Failed to render 404 template: {}", err);
-                        (
-                            StatusCode::INTERNAL_SERVER_ERROR,
-                            "Something has gone wrong.",
-                        )
-                            .into_response()
-                    }
-                },
-                Err(err) => {
-                    error!("Failed to load 404 template: {}", err);
-                    (
-                        StatusCode::INTERNAL_SERVER_ERROR,
-                        "Something has gone wrong.",
-                    )
-                        .into_response()
-                }
-            },
+            AppError::PageNotFound => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Something has gone wrong.",
+            )
+                .into_response(),
             AppError::Unknown(err) => {
                 error!("Unknown error: {}", err);
                 (
@@ -69,7 +60,7 @@ impl IntoResponse for AppError {
 }
 
 pub struct SharedState {
-    pub tera: Tera,
+    pub renderer: Renderer,
     pub published_pages: Box<dyn PublicationManager>,
 }
 
@@ -151,13 +142,7 @@ async fn main() {
 
     spawn(compile_assets());
 
-    let mut tera = Tera::default();
-
-    tera.register_function("digest_asset", digest_asset());
-    embed_templates(&mut tera)
-        .await
-        .map_err(|e| anyhow::anyhow!("Failed to embed templates: {}", e))
-        .unwrap();
+    let renderer = Renderer::new("templates".to_string()).unwrap();
 
     let mut published_pages = PublishedPages::default();
     published_pages
@@ -166,7 +151,7 @@ async fn main() {
         .expect("Failed to publish pages during application startup");
 
     let shared_state = Arc::new(SharedState {
-        tera,
+        renderer,
         published_pages: Box::new(published_pages),
     });
 

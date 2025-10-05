@@ -87,13 +87,11 @@ mod tests {
     use crate::{
         SharedState,
         pages::{Frontmatter, PublicationManager, PublishedPage},
-        utilities::tera::{digest_asset, embed_templates},
     };
     use anyhow::Result;
     use axum::{extract::State, http::StatusCode, response::IntoResponse};
     use chrono::{DateTime, Utc};
     use std::{future::Future, pin::Pin, sync::Arc};
-    use tera::Tera;
 
     struct MockPublishedPages {
         pages: Vec<PublishedPage>,
@@ -118,18 +116,11 @@ mod tests {
         }
     }
 
-    async fn setup_tera() -> Tera {
-        let mut tera = Tera::default();
-        tera.register_function("digest_asset", digest_asset());
-        embed_templates(&mut tera).await.unwrap();
-        tera
-    }
-
     async fn create_shared_state(pages: Vec<PublishedPage>) -> Arc<SharedState> {
-        let tera = setup_tera().await;
         let mock_pages = MockPublishedPages { pages };
+        let renderer = rust_web_common::templating::Renderer::new("templates".to_string()).unwrap();
         Arc::new(SharedState {
-            tera,
+            renderer,
             published_pages: Box::new(mock_pages),
         })
     }

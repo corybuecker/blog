@@ -1,0 +1,14 @@
+{
+  "format_on_save": "on",
+  "file_types": {
+    "HTML": ["hbs"]
+  },
+  "languages": {
+    "HTML": {
+      "formatter": "prettier"
+    }
+  },
+  "inlay_hints": {
+    "enabled": true
+  }
+}
