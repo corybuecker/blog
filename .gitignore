@@ -4,5 +4,4 @@
 /static/*.js
 /static/*.js.map
 .env
-.rules
 /node_modules
