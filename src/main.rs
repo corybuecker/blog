@@ -3,7 +3,7 @@ use axum::{
     extract::Request,
     http::{HeaderValue, StatusCode, header::CONTENT_SECURITY_POLICY},
     middleware::{Next, from_fn},
-    response::IntoResponse,
+    response::{Html, IntoResponse},
     routing::get,
 };
 use pages::{PublicationManager, PublishedPages};
@@ -42,11 +42,21 @@ impl From<RendererError> for AppError {
 impl IntoResponse for AppError {
     fn into_response(self) -> axum::response::Response {
         match self {
-            AppError::PageNotFound => (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "Something has gone wrong.",
-            )
-                .into_response(),
+            AppError::PageNotFound => match Renderer::new("templates".to_string()) {
+                Ok(renderer) => match renderer.render("errors/404") {
+                    Ok(response) => (StatusCode::NOT_FOUND, Html(response)).into_response(),
+                    Err(_err) => (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        "Something has gone wrong.",
+                    )
+                        .into_response(),
+                },
+                Err(_err) => (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Something has gone wrong.",
+                )
+                    .into_response(),
+            },
             AppError::Unknown(err) => {
                 error!("Unknown error: {}", err);
                 (
