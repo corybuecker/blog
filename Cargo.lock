@@ -1587,7 +1587,7 @@ dependencies = [
 [[package]]
 name = "rust-web-common"
 version = "0.1.0"
-source = "git+https://github.com/corybuecker/rust-web-common?branch=main#2703f60cebca37c0b5e18e059b7b2bedfc9b4254"
+source = "git+https://github.com/corybuecker/rust-web-common?branch=main#fd0d51e79e8f17861b2b911c274bef181ab1a6bf"
 dependencies = [
  "handlebars",
  "opentelemetry",
