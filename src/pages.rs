@@ -4,10 +4,12 @@ pub mod sitemap;
 
 use anyhow::{Context, Result, anyhow};
 use chrono::{DateTime, Utc};
+use comrak::options::Plugins;
 use comrak::{
-    Arena, Options, Plugins, adapters::SyntaxHighlighterAdapter, nodes::NodeValue, parse_document,
+    Arena, Options, adapters::SyntaxHighlighterAdapter, nodes::NodeValue, parse_document,
 };
 use serde::Serialize;
+use std::borrow::Cow;
 use std::fmt::{self, Write};
 use std::{collections::HashMap, pin::Pin};
 use tokio::fs::{self, read_dir};
@@ -225,7 +227,7 @@ impl SyntaxHighlighterAdapter for SyntaxAdapter {
     fn write_pre_tag(
         &self,
         output: &mut dyn Write,
-        attributes: HashMap<String, String>,
+        attributes: HashMap<&'static str, Cow<str>>,
     ) -> fmt::Result {
         if attributes.contains_key("lang") {
             write!(
@@ -241,7 +243,7 @@ impl SyntaxHighlighterAdapter for SyntaxAdapter {
     fn write_code_tag(
         &self,
         output: &mut dyn Write,
-        attributes: HashMap<String, String>,
+        attributes: HashMap<&'static str, Cow<str>>,
     ) -> fmt::Result {
         if attributes.contains_key("class") {
             output.write_str(&format!("<code class=\"{}\">", attributes["class"]))
