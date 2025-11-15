@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   build:
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-latest
     steps:
       - uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef
         with:
