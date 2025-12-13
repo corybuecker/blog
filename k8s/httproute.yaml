@@ -11,6 +11,6 @@ spec:
     - corybuecker.com
   rules:
     - backendRefs:
-      - name: blog
-        namespace: blog
-        port: 80
+        - name: blog
+          namespace: blog
+          port: 80

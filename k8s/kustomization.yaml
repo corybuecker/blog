@@ -4,7 +4,7 @@ kind: Kustomization
 images:
   - name: blog
     newName: ghcr.io/corybuecker/blog
-    digest: sha256:eb57930e6d5b17b38d4d5d96e80ce780942424b68bdc856c2c410af9b2ab620f
+    digest: sha256:d8d812c30a9ff8b9f023185f04e41dd83875e689896b1625e10f3c1b3ea0b122
 
 resources:
   - namespace.yaml
@@ -18,5 +18,5 @@ configMapGenerator:
     namespace: blog
     literals:
       - LOG_LEVEL=debug
-      - METRICS_ENDPOINT=http://prometheus.prometheus.svc.cluster.local:9090/api/v1/otlp/v1/metrics
-      - TRACING_ENDPOINT=http://jaeger.jaeger.svc.cluster.local:4318/v1/traces
+      # - METRICS_ENDPOINT=http://prometheus.prometheus.svc.cluster.local:9090/api/v1/otlp/v1/metrics
+      # - TRACING_ENDPOINT=http://jaeger.jaeger.svc.cluster.local:4318/v1/traces
