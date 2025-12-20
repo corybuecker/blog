@@ -1,7 +1,0 @@
-/target
-/assets/node_modules
-/static/*.css
-/static/*.js
-/static/*.js.map
-.env
-/node_modules
