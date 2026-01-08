@@ -12,7 +12,7 @@ rand = { version = "0.9.2" }
 # rust-web-common = { path = "../rust-web-common" }
 rust-web-common = { git = "https://github.com/corybuecker/rust-web-common", branch = "main" }
 serde = { version = "1.0.228", features = ["derive"] }
-tokio = { version = "1.48.0", default-features = false, features = [
+tokio = { version = "1.49.0", default-features = false, features = [
     "macros",
     "rt-multi-thread",
     "signal",
