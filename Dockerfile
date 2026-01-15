@@ -1,4 +1,4 @@
-FROM rust@sha256:65734d21f103d104fe0d9e508a424f7f60abd10e489d36de8bd36ae6c80e746d AS backend_builder
+FROM rust@sha256:bed2d7f8140d73c26f16c298c91ae8487a09f40d3840c0d8d139537e1b51e148 AS backend_builder
 RUN mkdir -p /build/src
 WORKDIR /build
 COPY Cargo.lock Cargo.toml /build/
@@ -9,7 +9,7 @@ RUN touch /build/src/main.rs
 RUN cargo build --release
 RUN cp /build/target/release/blog /build/blog
 
-FROM node@sha256:6d362f0df70431417ef79c30e47c0515ea9066d8be8011e859c6c3575514a027 AS frontend_builder
+FROM node@sha256:a2f09f3ab9217c692a4e192ea272866ae43b59fabda1209101502bf40e0b9768 AS frontend_builder
 RUN mkdir -p /assets
 COPY package.json package-lock.json /assets/
 COPY css /assets/css
@@ -21,7 +21,7 @@ RUN npx tailwindcss --minify --input css/app.css --output app.css
 RUN npx esbuild --sourcemap --minify --bundle --format=esm --outdir=/assets js/app.ts
 RUN gzip -k9 app.css app.js app.js.map
 
-FROM debian@sha256:c71b05eac0b20adb4cdcc9f7b052227efd7da381ad10bb92f972e8eae7c6cdc9
+FROM debian@sha256:5cf544fad978371b3df255b61e209b373583cb88b733475c86e49faa15ac2104
 RUN mkdir -p /opt/blog
 WORKDIR /opt/blog
 COPY --from=backend_builder /build/blog /opt/blog/
