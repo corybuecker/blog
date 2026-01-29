@@ -1124,7 +1124,7 @@ version = "0.50.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7957b9740744892f114936ab4a57b3f487491bbeafaf8083688b16841a4240e5"
 dependencies = [
- "windows-sys 0.60.2",
+ "windows-sys 0.61.1",
 ]
 
 [[package]]
@@ -1588,7 +1588,7 @@ dependencies = [
 [[package]]
 name = "rust-web-common"
 version = "0.1.0"
-source = "git+https://github.com/corybuecker/rust-web-common?branch=main#81bf3a80843920580903afc5a35a8ca89c4384f9"
+source = "git+https://github.com/corybuecker/rust-web-common?branch=main#3ca6d0a4074a3710e3a004043070cf3e6a54fd14"
 dependencies = [
  "handlebars",
  "opentelemetry",
