@@ -1669,7 +1669,7 @@ dependencies = [
 [[package]]
 name = "rust-web-common"
 version = "0.1.0"
-source = "git+https://github.com/corybuecker/rust-web-common?branch=main#75a0c9dea1a0be7779ce498bf6ca8fb04a0ec271"
+source = "git+https://github.com/corybuecker/rust-web-common?branch=main#1ea97efb19d1979ca399237fcff87e7773a57358"
 dependencies = [
  "handlebars",
  "opentelemetry",
@@ -2739,9 +2739,9 @@ checksum = "2fb433233f2df9344722454bc7e96465c9d03bff9d77c248f9e7523fe79585b5"
 
 [[package]]
 name = "xml-builder"
-version = "0.5.4"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1c023e38161c176b6ed516e2c398acd755cd19983661eff519b811c01646e10f"
+checksum = "b3d5951f276a574fce1cf86598f6143778be7ac5585c241f5e39dbdb0371d8b4"
 
 [[package]]
 name = "yaml-rust"
