@@ -1291,9 +1291,9 @@ dependencies = [
 
 [[package]]
 name = "opentelemetry-otlp"
-version = "0.31.0"
+version = "0.31.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7a2366db2dca4d2ad033cad11e6ee42844fd727007af5ad04a1730f4cb8163bf"
+checksum = "1f69cd6acbb9af919df949cd1ec9e5e7fdc2ef15d234b6b795aaa525cc02f71f"
 dependencies = [
  "http",
  "opentelemetry",
@@ -1669,7 +1669,7 @@ dependencies = [
 [[package]]
 name = "rust-web-common"
 version = "0.1.0"
-source = "git+https://github.com/corybuecker/rust-web-common?branch=main#1ea97efb19d1979ca399237fcff87e7773a57358"
+source = "git+https://github.com/corybuecker/rust-web-common?branch=main#9a7adbf8928d996b892de24fc33d776a6f146d83"
 dependencies = [
  "handlebars",
  "opentelemetry",
