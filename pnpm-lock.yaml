@@ -34,8 +34,8 @@ importers:
         specifier: 4.1.11
         version: 4.1.11
       typescript:
-        specifier: 5.8.3
-        version: 5.8.3
+        specifier: 6.0.2
+        version: 6.0.2
 
 packages:
 
@@ -685,8 +685,8 @@ packages:
     resolution: {integrity: sha512-r0eojU4bI8MnHr8c5bNo7lJDdI2qXlWWJk6a9EAFG7vbhTjElYhBVS3/miuE0uOuoLdb8Mc/rVfsmm6eo5o9GA==}
     hasBin: true
 
-  typescript@5.8.3:
-    resolution: {integrity: sha512-p1diW6TqL9L07nNxvRMM7hMMw4c5XOo/1ibL4aAIGmSAt9slTE1Xgw5KWuof2uTOvCg9BY7ZRi+GaF+7sfgPeQ==}
+  typescript@6.0.2:
+    resolution: {integrity: sha512-bGdAIrZ0wiGDo5l8c++HWtbaNCWTS4UTv7RaTH/ThVIgjkveJt83m74bBHMJkuCbslY8ixgLBVZJIOiQlQTjfQ==}
     engines: {node: '>=14.17'}
     hasBin: true
 
@@ -1195,7 +1195,7 @@ snapshots:
 
   touch@3.1.1: {}
 
-  typescript@5.8.3: {}
+  typescript@6.0.2: {}
 
   undefsafe@2.0.5: {}
 
