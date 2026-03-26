@@ -2,7 +2,7 @@
   "devDependencies": {
     "@tailwindcss/cli": "4.2.2",
     "@tailwindcss/forms": "0.5.11",
-    "@tailwindcss/typography": "0.5.16",
+    "@tailwindcss/typography": "0.5.19",
     "esbuild": "0.27.4",
     "nodemon": "3.1.14",
     "prismjs": "1.30.0",
