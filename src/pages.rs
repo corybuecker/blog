@@ -4,6 +4,7 @@ pub mod sitemap;
 
 use anyhow::{Context, Result, anyhow};
 use chrono::{DateTime, Utc};
+use comrak::html::escape;
 use comrak::options::Plugins;
 use comrak::{
     Arena, Options, adapters::SyntaxHighlighterAdapter, nodes::NodeValue, parse_document,
@@ -221,7 +222,7 @@ impl SyntaxHighlighterAdapter for SyntaxAdapter {
         _lang: Option<&str>,
         code: &str,
     ) -> fmt::Result {
-        output.write_str(code)
+        escape(output, code)
     }
 
     fn write_pre_tag(
@@ -229,32 +230,20 @@ impl SyntaxHighlighterAdapter for SyntaxAdapter {
         output: &mut dyn Write,
         attributes: HashMap<&'static str, Cow<str>>,
     ) -> fmt::Result {
-        let lang = if attributes.contains_key("lang") {
+        let unsafe_lang = if attributes.contains_key("lang") {
             attributes["lang"].to_string()
         } else {
             String::new()
         };
 
-        if [
-            String::from("bash"),
-            String::from("yaml"),
-            String::from("javascript"),
-            String::from("plaintext"),
-            String::from("docker"),
-            String::from("nginx"),
-            String::from("css"),
-            String::from("elixir"),
-        ]
-        .contains(&lang)
-        {
-            write!(
-                output,
-                "<pre class=\"not-prose\" lang=\"{}\">",
-                lang
-            )
-        } else {
-            write!(output, "<pre class=\"not-prose\">")
-        }
+        let mut escaped_lang = String::new();
+        escape(&mut escaped_lang, &unsafe_lang)?;
+
+        write!(
+            output,
+            "<pre class=\"not-prose\" lang=\"{}\">",
+            escaped_lang
+        )
     }
 
     fn write_code_tag(
@@ -262,27 +251,15 @@ impl SyntaxHighlighterAdapter for SyntaxAdapter {
         output: &mut dyn Write,
         attributes: HashMap<&'static str, Cow<str>>,
     ) -> fmt::Result {
-        let class = if attributes.contains_key("class") {
+        let unsafe_class = if attributes.contains_key("class") {
             attributes["class"].to_string()
         } else {
             String::new()
         };
 
-        if [
-            String::from("language-bash"),
-            String::from("language-yaml"),
-            String::from("language-javascript"),
-            String::from("language-plaintext"),
-            String::from("language-docker"),
-            String::from("language-nginx"),
-            String::from("language-css"),
-            String::from("language-elixir"),
-        ]
-        .contains(&class)
-        {
-            output.write_str(&format!("<code class=\"{}\">", class))
-        } else {
-            output.write_str("<code>")
-        }
+        let mut escaped_class = String::new();
+        escape(&mut escaped_class, &unsafe_class)?;
+
+        output.write_str(&format!("<code class=\"{}\">", escaped_class))
     }
 }
