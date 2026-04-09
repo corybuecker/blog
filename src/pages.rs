@@ -229,14 +229,31 @@ impl SyntaxHighlighterAdapter for SyntaxAdapter {
         output: &mut dyn Write,
         attributes: HashMap<&'static str, Cow<str>>,
     ) -> fmt::Result {
-        if attributes.contains_key("lang") {
+        let lang = if attributes.contains_key("lang") {
+            attributes["lang"].to_string()
+        } else {
+            String::new()
+        };
+
+        if [
+            String::from("bash"),
+            String::from("yaml"),
+            String::from("javascript"),
+            String::from("plaintext"),
+            String::from("docker"),
+            String::from("nginx"),
+            String::from("css"),
+            String::from("elixir"),
+        ]
+        .contains(&lang)
+        {
             write!(
                 output,
                 "<pre class=\"not-prose\" lang=\"{}\">",
-                attributes["lang"]
+                lang
             )
         } else {
-            output.write_str("<pre class=\"not-prose\">")
+            write!(output, "<pre class=\"not-prose\">")
         }
     }
 
@@ -245,8 +262,25 @@ impl SyntaxHighlighterAdapter for SyntaxAdapter {
         output: &mut dyn Write,
         attributes: HashMap<&'static str, Cow<str>>,
     ) -> fmt::Result {
-        if attributes.contains_key("class") {
-            output.write_str(&format!("<code class=\"{}\">", attributes["class"]))
+        let class = if attributes.contains_key("class") {
+            attributes["class"].to_string()
+        } else {
+            String::new()
+        };
+
+        if [
+            String::from("language-bash"),
+            String::from("language-yaml"),
+            String::from("language-javascript"),
+            String::from("language-plaintext"),
+            String::from("language-docker"),
+            String::from("language-nginx"),
+            String::from("language-css"),
+            String::from("language-elixir"),
+        ]
+        .contains(&class)
+        {
+            output.write_str(&format!("<code class=\"{}\">", class))
         } else {
             output.write_str("<code>")
         }
