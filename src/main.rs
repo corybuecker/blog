@@ -147,7 +147,7 @@ async fn metrics(request: Request, next: Next) -> impl IntoResponse {
 
 #[tokio::main]
 async fn main() {
-    let mut telemetry = TelemetryBuilder::new("blog".to_string());
+    let mut telemetry = TelemetryBuilder::new("blog".to_string()).with_json_log_format();
     telemetry.init().expect("could not initialize subscriber");
 
     spawn(compile_assets());
