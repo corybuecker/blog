@@ -5,3 +5,5 @@
 /static/*.js.map
 .env
 /node_modules
+/.pnpm-store
+/.devcontainer/.env

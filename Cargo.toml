@@ -8,9 +8,8 @@ anyhow = { version = "1.0.102" }
 axum = { version = "0.8.8" }
 chrono = { version = "0.4.44", features = ["serde"] }
 comrak = { version = "0.51.0" }
-rand = { version = "0.10.0" }
-# rust-web-common = { path = "../rust-web-common" }
-rust-web-common = { git = "https://github.com/corybuecker/rust-web-common", branch = "main" }
+rand = { version = "0.10.1" }
+rust-web-common = { git = "https://github.com/corybuecker/rust-web-common", tag = "v2.0.0" }
 serde = { version = "1.0.228", features = ["derive"] }
 tokio = { version = "1.49.0", default-features = false, features = [
     "macros",
