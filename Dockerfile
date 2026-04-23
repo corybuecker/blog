@@ -9,7 +9,7 @@ RUN touch /build/src/main.rs
 RUN cargo build --release
 RUN cp /build/target/release/blog /build/blog
 
-FROM node:lts-trixie@sha256:e4ceb04a1f1dd4823a1ab6ef8d2182c09d6299b507c70f20bd0eb9921a78354d AS frontend_builder
+FROM node:lts-trixie@sha256:135dc9a66aef366e09958c18dab705081d77fb31eccffe8c3865fac9d3e42a1d AS frontend_builder
 RUN mkdir -p /assets
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json /assets/
 COPY css /assets/css
