@@ -11,7 +11,7 @@ comrak = { version = "0.51.0" }
 rand = { version = "0.10.1" }
 rust-web-common = { git = "https://github.com/corybuecker/rust-web-common", tag = "v2.0.0" }
 serde = { version = "1.0.228", features = ["derive"] }
-tokio = { version = "1.49.0", default-features = false, features = [
+tokio = { version = "1.51.1", default-features = false, features = [
     "macros",
     "rt-multi-thread",
     "signal",
