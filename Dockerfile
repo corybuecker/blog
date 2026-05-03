@@ -22,7 +22,7 @@ RUN npx tailwindcss --minify --input css/app.css --output app.css
 RUN npx esbuild --sourcemap --minify --bundle --format=esm --outdir=/assets js/app.ts
 RUN gzip -k9 app.css app.js app.js.map
 
-FROM debian:trixie-slim@sha256:4ffb3a1511099754cddc70eb1b12e50ffdb67619aa0ab6c13fcd800a78ef7c7a
+FROM debian:trixie-slim@sha256:cedb1ef40439206b673ee8b33a46a03a0c9fa90bf3732f54704f99cb061d2c5a
 RUN mkdir -p /opt/blog
 WORKDIR /opt/blog
 COPY --from=backend_builder /build/blog /opt/blog/
