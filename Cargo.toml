@@ -5,7 +5,7 @@ edition = "2024"
 
 [dependencies]
 anyhow = { version = "1.0.102" }
-axum = { version = "0.8.8" }
+axum = { version = "0.8.9" }
 chrono = { version = "0.4.44", features = ["serde"] }
 comrak = { version = "0.51.0" }
 rand = { version = "0.10.1" }
