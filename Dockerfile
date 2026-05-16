@@ -16,7 +16,7 @@ COPY css /assets/css
 COPY js /assets/js
 COPY templates /assets/templates
 WORKDIR /assets
-RUN npm install -g pnpm@10.33.0
+RUN npm install -g pnpm@11.1.2
 RUN pnpm install
 RUN npx tailwindcss --minify --input css/app.css --output app.css
 RUN npx esbuild --sourcemap --minify --bundle --format=esm --outdir=/assets js/app.ts
