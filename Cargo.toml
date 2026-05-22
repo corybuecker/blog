@@ -5,19 +5,19 @@ edition = "2024"
 
 [dependencies]
 anyhow = { version = "1.0.102" }
-axum = { version = "0.8.8" }
+axum = { version = "0.8.9" }
 chrono = { version = "0.4.44", features = ["serde"] }
-comrak = { version = "0.51.0" }
+comrak = { version = "0.52.0" }
 rand = { version = "0.10.1" }
 rust-web-common = { git = "https://github.com/corybuecker/rust-web-common", tag = "v2.0.0" }
 serde = { version = "1.0.228", features = ["derive"] }
-tokio = { version = "1.49.0", default-features = false, features = [
+tokio = { version = "1.52.1", default-features = false, features = [
     "macros",
     "rt-multi-thread",
     "signal",
     "fs",
     "process",
 ] }
-tower-http = { version = "0.6.8", features = ["trace", "fs"] }
+tower-http = { version = "0.6.10", features = ["trace", "fs"] }
 tracing = { version = "0.1.44" }
 xml-builder = { version = "0.6" }
