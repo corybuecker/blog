@@ -1,0 +1,22 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: blog
+  namespace: blog
+spec:
+  gatewayClassName: traefik
+  listeners:
+    - allowedRoutes:
+        namespaces:
+          from: Same
+      hostname: corybuecker.dev
+      name: corybuecker-dev
+      port: 8000
+      protocol: HTTP
+    - allowedRoutes:
+        namespaces:
+          from: Same
+      hostname: www.corybuecker.dev
+      name: www-corybuecker-dev
+      port: 8000
+      protocol: HTTP
