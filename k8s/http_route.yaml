@@ -6,8 +6,8 @@ metadata:
 spec:
   parentRefs:
     - kind: Gateway
-      name: external-http
-      namespace: default
+      name: blog
+      namespace: blog
   hostnames:
     - corybuecker.dev
     - www.corybuecker.dev
