@@ -173,7 +173,10 @@ async fn main() {
 
 #[instrument]
 async fn compile_assets() {
-    let css_command = Command::new("npx")
+    if !cfg!(debug_assertions) {
+        return;
+    }
+    let css_command = Command::new("pnpm")
         .arg("tailwindcss")
         .arg("--map")
         .arg("--input")
@@ -183,7 +186,7 @@ async fn compile_assets() {
         .output()
         .instrument(info_span!("compile css"));
 
-    let js_command = Command::new("npx")
+    let js_command = Command::new("pnpm")
         .arg("esbuild")
         .arg("--bundle")
         .arg("--outdir=static")

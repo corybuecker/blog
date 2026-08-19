@@ -6,7 +6,7 @@ metadata:
   labels:
     app: blog
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: blog
@@ -15,12 +15,10 @@ spec:
       labels:
         app: blog
     spec:
-      nodeSelector:
-        kubernetes.io/arch: arm64
       automountServiceAccountToken: false
       containers:
         - name: blog
-          image: ghcr.io/corybuecker/simple-budget:abc
+          image: projects.corybuecker.dev/corybuecker/blog@sha256:389d8b61cf1d84ac6678ea63da9250569819c8d8abf13d6fce4aa179d2e564d5
           ports:
             - name: http
               containerPort: 8000
