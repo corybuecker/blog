@@ -5,12 +5,12 @@ permissions:
   id-token: write
 
 on:
-  pull_request_review_comment:
+  issue_comment:
     types: [created]
 
 jobs:
   claude:
-    if: contains(github.event.comment.body, '@claude')
+    if: github.event.issue.pull_request && contains(github.event.comment.body, '@claude')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # 7.0.1
