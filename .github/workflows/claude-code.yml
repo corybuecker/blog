@@ -21,3 +21,5 @@ jobs:
           anthropic_federation_rule_id: ${{ secrets.ANTHROPIC_FEDERATION_RULE_ID }}
           anthropic_organization_id: ${{ secrets.ANTHROPIC_ORGANIZATION_ID }}
           anthropic_service_account_id: ${{ secrets.ANTHROPIC_SERVICE_ACCOUNT_ID }}
+          claude_args: |
+            --model claude-sonnet-5
