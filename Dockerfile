@@ -16,8 +16,8 @@ COPY css /assets/css
 COPY js /assets/js
 COPY templates /assets/templates
 WORKDIR /assets
-RUN npm install -g pnpm@11.5.3
-RUN pnpm install
+RUN npm install -g pnpm@11.26.0
+RUN pnpm install --frozen-lockfile
 RUN npx tailwindcss --minify --input css/app.css --output app.css
 RUN npx esbuild --sourcemap --minify --bundle --format=esm --outdir=/assets js/app.ts
 RUN gzip -k9 app.css app.js app.js.map
