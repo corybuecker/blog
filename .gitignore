@@ -3,7 +3,9 @@
 /static/*.css
 /static/*.js
 /static/*.js.map
+/static/.vite
 .env
 /node_modules
 /.pnpm-store
 /.devcontainer/.env
+/dist

@@ -7,6 +7,8 @@ import "prismjs/components/prism-nginx";
 import "prismjs/components/prism-elixir";
 import "prismjs/components/prism-css";
 
+import "./app.css";
+
 const localizeTimeElements = () => {
   const timeElements: HTMLCollectionOf<HTMLTimeElement> =
     document.getElementsByTagName("time");
