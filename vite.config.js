@@ -4,7 +4,6 @@ import { defineConfig } from 'vite'
 export default defineConfig({
   build: {
     manifest: true,
-    outDir: resolve(import.meta.dirname, 'static'),
     lib: {
       entry: resolve(import.meta.dirname, 'assets/app.ts'),
       formats: ["es"],
