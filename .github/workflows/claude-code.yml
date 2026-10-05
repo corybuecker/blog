@@ -16,7 +16,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # 7.0.1
         with:
           fetch-depth: 1
-      - uses: anthropics/claude-code-action@0a8d3c9443bbff909ab973b6a17a340b913f229f # 1.0.222
+      - uses: anthropics/claude-code-action@cfc3eb22bfed5c26ef66e3223c982af27e4524de # 1.0.222
         with:
           anthropic_federation_rule_id: ${{ secrets.ANTHROPIC_FEDERATION_RULE_ID }}
           anthropic_organization_id: ${{ secrets.ANTHROPIC_ORGANIZATION_ID }}
