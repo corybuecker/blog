@@ -1,3 +1,4 @@
+use askama::Template;
 use axum::{
     Router,
     extract::Request,
@@ -7,11 +8,7 @@ use axum::{
     routing::get,
 };
 use pages::{PublicationManager, PublishedPages};
-use rust_web_common::{
-    telemetry::TelemetryBuilder,
-    templating::{Renderer, RendererError},
-};
-use std::sync::Arc;
+use std::sync::{Arc, LazyLock};
 use tokio::{join, process::Command, select, signal::unix::SignalKind, spawn};
 use tower_http::{services::ServeDir, trace::TraceLayer};
 use tracing::{Instrument, debug, error, info, info_span, instrument};
@@ -19,6 +16,20 @@ use tracing::{Instrument, debug, error, info, info_span, instrument};
 mod pages;
 
 const CROSS_ORIGIN_OPENER_POLICY: &str = "Cross-Origin-Opener-Policy";
+
+/// Cache-busting token appended to asset URLs; changes on every start.
+pub static ASSET_VERSION: LazyLock<String> = LazyLock::new(|| {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs().to_string())
+        .unwrap_or_default()
+});
+
+#[derive(Template)]
+#[template(path = "errors/404.html")]
+struct NotFoundTemplate<'a> {
+    asset_version: &'a str,
+}
 
 #[derive(Debug)]
 pub enum AppError {
@@ -32,8 +43,8 @@ impl From<anyhow::Error> for AppError {
     }
 }
 
-impl From<RendererError> for AppError {
-    fn from(err: RendererError) -> Self {
+impl From<askama::Error> for AppError {
+    fn from(err: askama::Error) -> Self {
         error!("{:?}", err);
         AppError::Unknown(err.into())
     }
@@ -42,20 +53,20 @@ impl From<RendererError> for AppError {
 impl IntoResponse for AppError {
     fn into_response(self) -> axum::response::Response {
         match self {
-            AppError::PageNotFound => match Renderer::new("templates".to_string()) {
-                Ok(renderer) => match renderer.render("errors/404") {
-                    Ok(response) => (StatusCode::NOT_FOUND, Html(response)).into_response(),
-                    Err(_err) => (
+            AppError::PageNotFound => match (NotFoundTemplate {
+                asset_version: &ASSET_VERSION,
+            })
+            .render()
+            {
+                Ok(body) => (StatusCode::NOT_FOUND, Html(body)).into_response(),
+                Err(err) => {
+                    error!("could not render 404 template: {err}");
+                    (
                         StatusCode::INTERNAL_SERVER_ERROR,
                         "Something has gone wrong.",
                     )
-                        .into_response(),
-                },
-                Err(_err) => (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Something has gone wrong.",
-                )
-                    .into_response(),
+                        .into_response()
+                }
             },
             AppError::Unknown(err) => {
                 error!("Unknown error: {}", err);
@@ -70,7 +81,6 @@ impl IntoResponse for AppError {
 }
 
 pub struct SharedState {
-    pub renderer: Renderer,
     pub published_pages: Box<dyn PublicationManager>,
 }
 
@@ -147,12 +157,15 @@ async fn metrics(request: Request, next: Next) -> impl IntoResponse {
 
 #[tokio::main]
 async fn main() {
-    let mut telemetry = TelemetryBuilder::new("blog".to_string()).with_json_log_format();
-    telemetry.init().expect("could not initialize subscriber");
+    tracing_subscriber::fmt()
+        .json()
+        .with_env_filter(
+            tracing_subscriber::EnvFilter::try_from_default_env()
+                .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("info")),
+        )
+        .init();
 
     spawn(compile_assets());
-
-    let renderer = Renderer::new("templates".to_string()).unwrap();
 
     let mut published_pages = PublishedPages::default();
     published_pages
@@ -161,7 +174,6 @@ async fn main() {
         .expect("Failed to publish pages during application startup");
 
     let shared_state = Arc::new(SharedState {
-        renderer,
         published_pages: Box::new(published_pages),
     });
 

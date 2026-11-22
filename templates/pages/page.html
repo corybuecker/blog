@@ -1,0 +1,19 @@
+{% extends "layout.html" %}
+
+{% block main %}
+<article class="prose max-w-none">
+    <h1>{{ title }}</h1>
+    <p>
+        <time datetime="{{ published_at }}">
+            {{ published_at }}
+        </time>
+        {% if let Some(revised_at) = revised_at %}
+            (revised on
+            <time datetime="{{ revised_at }}">
+                {{ revised_at }}
+            </time>)
+        {% endif %}
+    </p>
+    {{- content|safe -}}
+</article>
+{% endblock %}

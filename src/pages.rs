@@ -3,32 +3,31 @@ pub mod page;
 pub mod sitemap;
 
 use anyhow::{Context, Result, anyhow};
-use chrono::{DateTime, Utc};
 use comrak::html::escape;
 use comrak::options::Plugins;
 use comrak::{
     Arena, Options, adapters::SyntaxHighlighterAdapter, nodes::NodeValue, parse_document,
 };
-use serde::Serialize;
+use jiff::Timestamp;
 use std::borrow::Cow;
 use std::fmt::{self, Write};
 use std::{collections::HashMap, pin::Pin};
 use tokio::fs::{self, read_dir};
 use tracing::instrument;
 
-#[derive(Debug, Serialize, Clone)]
+#[derive(Debug, Clone)]
 pub struct PublishedPage {
-    pub published_at: DateTime<Utc>,
+    pub published_at: Timestamp,
     pub path: String,
     pub frontmatter: Frontmatter,
 }
 
-#[derive(Debug, Serialize, Clone)]
+#[derive(Debug, Clone)]
 pub struct Frontmatter {
     pub description: String,
     pub preview: String,
-    pub published_at: Option<DateTime<Utc>>,
-    pub revised_at: Option<DateTime<Utc>>,
+    pub published_at: Option<Timestamp>,
+    pub revised_at: Option<Timestamp>,
     pub slug: String,
     pub title: String,
 }
@@ -98,13 +97,11 @@ impl Frontmatter {
 
         let published_at = map
             .get("published_at")
-            .and_then(|s| DateTime::parse_from_rfc3339(s).ok())
-            .map(|dt| dt.with_timezone(&Utc));
+            .and_then(|s| s.parse::<Timestamp>().ok());
 
         let revised_at = map
             .get("revised_at")
-            .and_then(|s| DateTime::parse_from_rfc3339(s).ok())
-            .map(|dt| dt.with_timezone(&Utc));
+            .and_then(|s| s.parse::<Timestamp>().ok());
 
         Ok(Frontmatter {
             description,
@@ -205,8 +202,8 @@ async fn published_pages() -> Result<Vec<PublishedPage>> {
 
     published_pages.sort_by(|a, b| {
         b.published_at
-            .timestamp_micros()
-            .cmp(&a.published_at.timestamp_micros())
+            .as_microsecond()
+            .cmp(&a.published_at.as_microsecond())
     });
 
     Ok(published_pages)

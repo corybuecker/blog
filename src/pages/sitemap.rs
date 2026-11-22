@@ -3,7 +3,7 @@ use anyhow::{Context, anyhow};
 use axum::extract::State;
 use axum::http::{StatusCode, header};
 use axum::{body::Body, http::HeaderValue, response::IntoResponse};
-use chrono::Utc;
+use jiff::Timestamp;
 use std::sync::Arc;
 use xml_builder::{XMLBuilder, XMLElement, XMLVersion};
 
@@ -44,11 +44,11 @@ pub async fn build_response(
             .frontmatter
             .revised_at
             .or(page.frontmatter.published_at)
-            .unwrap_or(Utc::now());
+            .unwrap_or(Timestamp::now());
 
         let mut lastmod = XMLElement::new("lastmod");
         lastmod
-            .add_text(last_modified.to_rfc3339())
+            .add_text(last_modified.to_string())
             .map_err(|e| anyhow!("Failed to add lastmod text: {}", e))?;
 
         url.add_child(lastmod)
@@ -90,7 +90,7 @@ mod tests {
     };
     use anyhow::Result;
     use axum::{extract::State, http::StatusCode, response::IntoResponse};
-    use chrono::{DateTime, Utc};
+    use jiff::Timestamp;
     use std::{future::Future, pin::Pin, sync::Arc};
 
     struct MockPublishedPages {
@@ -118,9 +118,7 @@ mod tests {
 
     async fn create_shared_state(pages: Vec<PublishedPage>) -> Arc<SharedState> {
         let mock_pages = MockPublishedPages { pages };
-        let renderer = rust_web_common::templating::Renderer::new("templates".to_string()).unwrap();
         Arc::new(SharedState {
-            renderer,
             published_pages: Box::new(mock_pages),
         })
     }
@@ -130,8 +128,8 @@ mod tests {
         slug: &str,
         title: &str,
         description: &str,
-        published_at: DateTime<Utc>,
-        revised_at: Option<DateTime<Utc>>,
+        published_at: Timestamp,
+        revised_at: Option<Timestamp>,
     ) -> PublishedPage {
         PublishedPage {
             path: path.to_string(),
@@ -159,12 +157,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_build_response_success() {
-        let published_date = DateTime::parse_from_rfc3339("2023-01-01T00:00:00Z")
-            .unwrap()
-            .with_timezone(&Utc);
-        let revised_date = DateTime::parse_from_rfc3339("2023-01-15T00:00:00Z")
-            .unwrap()
-            .with_timezone(&Utc);
+        let published_date = "2023-01-01T00:00:00Z".parse::<Timestamp>().unwrap();
+        let revised_date = "2023-01-15T00:00:00Z".parse::<Timestamp>().unwrap();
 
         let pages = vec![
             create_page(
@@ -203,18 +197,14 @@ mod tests {
         assert!(body_string.contains("https://corybuecker.com/post/page1"));
 
         // Check that lastmod dates are included
-        assert!(body_string.contains("2023-01-15T00:00:00+00:00")); // revised date
-        assert!(body_string.contains("2023-01-01T00:00:00+00:00")); // published date
+        assert!(body_string.contains("2023-01-15T00:00:00Z")); // revised date
+        assert!(body_string.contains("2023-01-01T00:00:00Z")); // published date
     }
 
     #[tokio::test]
     async fn test_build_response_uses_revised_date_when_available() {
-        let published_date = DateTime::parse_from_rfc3339("2023-01-01T00:00:00Z")
-            .unwrap()
-            .with_timezone(&Utc);
-        let revised_date = DateTime::parse_from_rfc3339("2023-01-15T00:00:00Z")
-            .unwrap()
-            .with_timezone(&Utc);
+        let published_date = "2023-01-01T00:00:00Z".parse::<Timestamp>().unwrap();
+        let revised_date = "2023-01-15T00:00:00Z".parse::<Timestamp>().unwrap();
 
         let pages = vec![create_page(
             "test-revised",
@@ -229,15 +219,13 @@ mod tests {
         let (body_string, _) = execute_request_and_get_body(state).await;
 
         // Should use the revised date, not the published date
-        assert!(body_string.contains("2023-01-15T00:00:00+00:00"));
-        assert!(!body_string.contains("2023-01-01T00:00:00+00:00"));
+        assert!(body_string.contains("2023-01-15T00:00:00Z"));
+        assert!(!body_string.contains("2023-01-01T00:00:00Z"));
     }
 
     #[tokio::test]
     async fn test_build_response_uses_published_date_when_no_revised() {
-        let published_date = DateTime::parse_from_rfc3339("2023-01-01T00:00:00Z")
-            .unwrap()
-            .with_timezone(&Utc);
+        let published_date = "2023-01-01T00:00:00Z".parse::<Timestamp>().unwrap();
 
         let pages = vec![create_page(
             "test-published",
@@ -252,14 +240,14 @@ mod tests {
         let (body_string, _) = execute_request_and_get_body(state).await;
 
         // Should use the published date
-        assert!(body_string.contains("2023-01-01T00:00:00+00:00"));
+        assert!(body_string.contains("2023-01-01T00:00:00Z"));
     }
 
     #[tokio::test]
     async fn test_build_response_no_dates_uses_current_time() {
         let pages = vec![PublishedPage {
             path: "test-no-dates".to_string(),
-            published_at: Utc::now(),
+            published_at: Timestamp::now(),
             frontmatter: Frontmatter {
                 description: "No dates page description".to_string(),
                 preview: "No dates preview".to_string(),
@@ -275,7 +263,7 @@ mod tests {
 
         // Should contain some valid RFC3339 timestamp (current time)
         assert!(body_string.contains("T"));
-        assert!(body_string.contains("+00:00"));
+        assert!(body_string.contains("Z"));
     }
 
     #[tokio::test]
@@ -289,9 +277,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_build_response_multiple_pages() {
-        let published_date = DateTime::parse_from_rfc3339("2023-01-01T00:00:00Z")
-            .unwrap()
-            .with_timezone(&Utc);
+        let published_date = "2023-01-01T00:00:00Z".parse::<Timestamp>().unwrap();
 
         let pages = vec![
             create_page(

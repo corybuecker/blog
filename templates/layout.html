@@ -6,17 +6,17 @@
             content="width=device-width,minimum-scale=1,initial-scale=1"
         />
         <link rel="me" href="https://github.com/corybuecker" />
-        {{#if description}}
-            <meta name="description" content="{{description}}" />
-        {{/if}}
-        <title>{{title}} &middot; Cory Buecker</title>
-        <link rel="stylesheet" href="{{digest_asset 'app.css'}}" />
+        {% if !description.is_empty() %}
+            <meta name="description" content="{{ description }}" />
+        {% endif %}
+        <title>{{ title }} &middot; Cory Buecker</title>
+        <link rel="stylesheet" href="/assets/app.css?v={{ asset_version }}" />
         <link
             rel="icon"
             type="image/svg+xml"
-            href="{{digest_asset 'favicon.svg'}}"
+            href="/assets/favicon.svg?v={{ asset_version }}"
         />
-        <link rel="apple-touch-icon" href="{{digest_asset 'favicon.svg'}}" />
+        <link rel="apple-touch-icon" href="/assets/favicon.svg?v={{ asset_version }}" />
     </head>
     <body class="@container">
         <div class="prose mx-auto px-4 @2xl:px-0">
@@ -71,9 +71,9 @@
                 </div>
             </nav>
             <main class="py-4">
-                {{~> (lookup this "partial")~}}
+                {%- block main %}{% endblock -%}
             </main>
         </div>
-        <script type="module" src="{{digest_asset 'app.js'}}"></script>
+        <script type="module" src="/assets/app.js?v={{ asset_version }}"></script>
     </body>
 </html>

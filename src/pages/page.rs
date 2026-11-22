@@ -1,19 +1,27 @@
 use super::without_frontmatter;
-use crate::{AppError, SharedState};
-use anyhow::anyhow;
+use crate::{ASSET_VERSION, AppError, SharedState};
+use askama::Template;
 use axum::{
     extract::{Path, State},
     response::{Html, IntoResponse, Redirect},
 };
-use rust_web_common::templating::to_json;
 use std::sync::Arc;
+
+#[derive(Template)]
+#[template(path = "pages/page.html")]
+struct PageTemplate {
+    asset_version: String,
+    title: String,
+    description: String,
+    content: String,
+    published_at: String,
+    revised_at: Option<String>,
+}
 
 pub async fn build_response(
     Path(slug): Path<String>,
     State(state): State<Arc<SharedState>>,
 ) -> Result<impl IntoResponse, AppError> {
-    let renderer = &state.renderer;
-
     let published_pages = state.published_pages.get_all()?;
     let published_page = published_pages
         .iter()
@@ -24,20 +32,19 @@ pub async fn build_response(
     let content = without_frontmatter(&content).await?;
 
     let description = published_page.frontmatter.description.clone();
-    let published_at = published_page.published_at;
-    let revised_at = published_page.frontmatter.revised_at;
+    let published_at = published_page.published_at.to_string();
+    let revised_at = published_page.frontmatter.revised_at.map(|d| d.to_string());
     let title = published_page.frontmatter.title.clone();
 
-    renderer.insert("content", content)?;
-    renderer.insert("description", description)?;
-    renderer.insert("title", title)?;
-    renderer.insert("published_at", to_json(published_at))?;
-    renderer.insert("revised_at", to_json(revised_at))?;
-    renderer.insert("partial", "pages/page")?;
-
-    let rendered = renderer
-        .render("layout")
-        .map_err(|e| anyhow!("could not render template: {e}"))?;
+    let rendered = PageTemplate {
+        asset_version: ASSET_VERSION.clone(),
+        title,
+        description,
+        content,
+        published_at,
+        revised_at,
+    }
+    .render()?;
 
     Ok(Html(rendered))
 }
@@ -62,7 +69,7 @@ mod tests {
         http,
         response::IntoResponse,
     };
-    use chrono::{DateTime, Utc};
+    use jiff::Timestamp;
     use std::{future::Future, pin::Pin, sync::Arc};
 
     struct MockPublishedPages {
@@ -90,9 +97,7 @@ mod tests {
 
     async fn create_shared_state(pages: Vec<PublishedPage>) -> Arc<SharedState> {
         let mock_pages = MockPublishedPages { pages };
-        let renderer = rust_web_common::templating::Renderer::new("templates".to_string()).unwrap();
         Arc::new(SharedState {
-            renderer,
             published_pages: Box::new(mock_pages),
         })
     }
@@ -102,15 +107,15 @@ mod tests {
         slug: &str,
         title: &str,
         description: &str,
-        revised_at: Option<DateTime<Utc>>,
+        revised_at: Option<Timestamp>,
     ) -> PublishedPage {
         PublishedPage {
             path: path.to_string(),
-            published_at: Utc::now(),
+            published_at: Timestamp::now(),
             frontmatter: Frontmatter {
                 description: description.to_string(),
                 preview: format!("{title} preview"),
-                published_at: Some(Utc::now()),
+                published_at: Some(Timestamp::now()),
                 revised_at,
                 slug: slug.to_string(),
                 title: title.to_string(),
@@ -141,9 +146,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_build_response_with_revised_date() {
-        let revised_date = DateTime::parse_from_rfc3339("2023-01-15T00:00:00Z")
-            .unwrap()
-            .with_timezone(&Utc);
+        let revised_date = "2023-01-15T00:00:00Z".parse::<Timestamp>().unwrap();
         let pages = vec![create_page(
             "test-revised",
             "revised-page",
