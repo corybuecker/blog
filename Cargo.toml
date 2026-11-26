@@ -8,7 +8,7 @@ anyhow = { version = "1.0" }
 askama = { version = "0.16", default-features = false, features = ["derive", "std"] }
 axum = { version = "0.8" }
 jiff = { version = "0.2" }
-comrak = { version = "0.59", default-features = false }
+comrak = { version = "1.0", default-features = false }
 tokio = { version = "1.52", default-features = false, features = [
     "macros",
     "rt-multi-thread",
